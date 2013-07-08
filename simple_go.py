@@ -213,6 +213,23 @@ class Board:
                     pos_list.append(pos3)
         return liberty_count
 
+    def get_group_liberties(self, pos):
+        group = get_group(self, pos)
+        liberties = {}
+        for pos2 in group:
+            some_liberties = liberties(self, pos2)
+            for lib in some_liberties:
+                if lib not in liberties:
+                    liberties.append(lib)
+    
+    def get_group(self, pos):
+        group_color = self.goban[pos]
+        group = {}
+        for pos2 in self.iterate_neighbour(pos):
+            if self.goban[pos2] == group_color:
+                group.append(pos2)
+        return group
+
     def remove_group(self,  pos):
         """Recursively remove given group from board and updating capture counts.
               First we remove this stone and then recursively call ourself to remove neighbour stones.
