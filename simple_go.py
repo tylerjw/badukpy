@@ -84,6 +84,70 @@ class Board:
             if 1<=x2<=self.size and 1<=y2<=self.size:
                 yield (x2, y2)
 
+    def get_pos_list(self, side):
+        """This goes through all positions in goban
+            and returns a list of positions of the given side
+        """
+        output = []
+        for pos in self.iterate_goban():
+            if self.goban[pos] == side:
+                output.append(pos)
+        return output
+
+    def get_chains(self, pos_list):
+        """This goes though all points in pos_list and builds
+            a list of lists of chains.  Input from get_pos_list(side).
+
+        Example of Error: 2nd and 3rd Black chains should be one.
+
+        D1
+        O to move:
+        Captured stones: White: 0 Black: 1
+        Chains: 
+        Black: [['A1', 'A2'], ['B4', 'C4', 'C5'], ['C3', 'C4'], ['D1', 'D2', 'E2'], ['E5']]
+        White: [['A3', 'A4', 'B3'], ['B2', 'B3', 'C2'], ['B5'], ['C1', 'C2'], ['D4', 'D5'], ['E3']]
+           ABCDE
+          +-----+
+         5|.OXOX| 5
+         4|OXXO.| 4
+         3|OOX.O| 3
+         2|XOOXX| 2
+         1|X.OX.| 1
+          +-----+
+           ABCDE
+
+        """
+        # test for empty pos_list
+        if not pos_list:
+            return None
+        
+        chains = [[pos_list[0]]]
+        pos_list.pop(0) # remove the first item (already in chains)
+        for pos in pos_list:
+            found = False
+            for neighboor in self.iterate_neighbour(pos):
+                for chain in chains:
+                    if neighboor in chain:
+                        chain.append(pos)
+                        found = True
+                        break
+            if not found: # new chain
+                chains.append([pos])
+        return chains
+
+    def print_chains(self, chains):
+        """Converts the list of list chains to string format
+        """
+        if not chains:
+            return None
+        output = []
+        for chain in chains:
+            line = []
+            for point in chain:
+                line.append(move_as_string(point, self.size))
+            output.append(line)
+        return output
+
     def key(self):
         """This returns unique key for board.
               Returns board as string.
@@ -100,14 +164,19 @@ class Board:
     def legal_move(self, move):
         """Test whether given move is legal.
               Returns truth value.
+
+              Returns false if play would result in suicide
         """
         if move==PASS_MOVE:
             return True
         if move not in self.goban: return False
         if self.goban[move]!=EMPTY: return False
-        for pos in self.iterate_neighbour(move):
+        for pos in self.iterate_neighbour(move): # prevent suicide
+            # neighboor is empty
             if self.goban[pos]==EMPTY: return True
+            # neighboor is own chain, check that chain has more that one liberty (prevent suicide)
             if self.goban[pos]==self.side and self.liberties(pos)>1: return True
+            # neighboor is opponent, and they only have one liberty = capture
             if self.goban[pos]==other_side[self.side] and self.liberties(pos)==1: return True
         return False
 
@@ -182,6 +251,9 @@ class Board:
         s = s + "Captured stones: "
         s = s + "White: " + str(self.captures[WHITE])
         s = s + " Black: " + str(self.captures[BLACK]) + "\n"
+        s = s + "Chains: \n"
+        s = s + "Black: " + str(self.print_chains(self.get_chains(self.get_pos_list(BLACK)))) + '\n'
+        s = s + "White: " + str(self.print_chains(self.get_chains(self.get_pos_list(WHITE)))) + '\n'
         board_x_coords = "   " + x_coords_string[:self.size]
         s = s + board_x_coords + "\n"
         s = s + "  +" + "-"*self.size + "+\n"
