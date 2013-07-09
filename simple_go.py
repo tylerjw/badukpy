@@ -100,47 +100,6 @@ class Board:
                 output.append(pos)
         return output
 
-    def get_chains(self, pos_list):
-        """This goes though all points in pos_list and builds
-            a list of lists of chains.  Input from get_pos_list(side).
-
-        Example of Error: 2nd and 3rd Black chains should be one.
-
-        D1
-        O to move:
-        Captured stones: White: 0 Black: 1
-        Chains: 
-        Black: [['A1', 'A2'], ['B4', 'C4', 'C5'], ['C3', 'C4'], ['D1', 'D2', 'E2'], ['E5']]
-        White: [['A3', 'A4', 'B3'], ['B2', 'B3', 'C2'], ['B5'], ['C1', 'C2'], ['D4', 'D5'], ['E3']]
-           ABCDE
-          +-----+
-         5|.OXOX| 5
-         4|OXXO.| 4
-         3|OOX.O| 3
-         2|XOOXX| 2
-         1|X.OX.| 1
-          +-----+
-           ABCDE
-
-        """
-        # test for empty pos_list
-        if not pos_list:
-            return None
-        
-        chains = [[pos_list[0]]]
-        pos_list.pop(0) # remove the first item (already in chains)
-        for pos in pos_list:
-            found = False
-            for neighboor in self.iterate_neighbour(pos):
-                for chain in chains:
-                    if neighboor in chain:
-                        chain.append(pos)
-                        found = True
-                        break
-            if not found: # new chain
-                chains.append([pos])
-        return chains
-
     def print_chains(self, chains):
         """Converts the list of list chains to string format
         """
@@ -285,82 +244,49 @@ class Board:
                 for i in remove:
                     self.groups[self.side][groups[0]] += self.groups[self.side][i]
                     self.groups[self.side].pop(i)
-                    '''
-#####################################################################
-        # update empty groups
-        # remove from empty group
-        index = 0
-        for i,group in enumerate(self.groups[EMPTY]):
-            if move in group:
-                group.remove(move)
-                index = i
-                break
-        # build groups from possible list
-        groups = []
-        original = deepcopy(self.groups[EMPTY][index])
-        while len(original)>0:
-            seen = []
-            pos = original.pop()
-            groups.append([pos])
-            found = False
-            for x in original:
-                if self.is_neighbour(pos,x):
-                    
-                
-            if not found:
-                groups.append([pos])
-                
-        if len(groups)>1: #group split
-            self.groups[EMPTY].pop(index)
-            for group in groups:
-                self.groups[EMPTY].append(group)
-#########################################################################
-        seen_pos = {}
-        liberty_count = 0
-        group_color = self.goban[pos]
-        pos_list = deepcopy(self.groups[EMPTY][index])
-        while pos_list:
-            pos2 = pos_list.pop()
-            if pos2 in seen_pos: continue
-            seen_pos[pos2] = True
-            for pos3 in self.iterate_neighbour(pos2):
-                if pos3 in seen_pos: continue
-#########################################################################
-'''
-        groups = []
-        # remove from empty group
-        index = 0
-        
-        for i,group in enumerate(self.groups[EMPTY]):
-            if move in group:
-                group.remove(move)
-                index = i
-                break
-        original = deepcopy(self.groups[EMPTY][index])
-        for neighbour in self.iterate_neighbour(move):
-            if neighbour in original:
-                groups.append([neighbour])
-                groups.remove(neighbour)
-        while len(original)>0:
-            for pos in original:
-                found = []
-                for i,group in enumerate(groups):
-                    for item in group:
-                        if self.is_neighbour(item,pos):
-                            group.append(pos)
-                            found.append(i)
-                if len(found) > 1: #combine groups
-                    found.sort() #order the groups
-                    remove = sorted(found[1:],reverse=True) #create a list of lists to move
-                    for i in remove:
-                        groups[0] += groups[i]
-                        groups.pop(i)
 
-        if(len(groups)>1):
-            #out with the old, in with the new
-            self.groups[EMPTY].pop(index)
-            for g in groups:
-                self.groups[EMPTY].append(g)
+        # empty group manipulation
+        groups = []
+        # remove from empty group
+        index = 0
+        done = False
+        for i,group in enumerate(self.groups[EMPTY]):
+            if move in group:
+                group.remove(move)
+                index = i
+                if len(group)==0: #last item in group
+                    self.groups[EMPTY].pop(i)
+                    done = True
+                break
+        if not done:
+            original = deepcopy(self.groups[EMPTY][index])
+            for neighbour in self.iterate_neighbour(move):
+                if neighbour in original:
+                    groups.append([neighbour])
+                    original.remove(neighbour)
+            while len(original)>0:
+                for pos in original:
+                    found = []
+                    for i,group in enumerate(groups):
+                        for item in group:
+                            if self.is_neighbour(item,pos):
+                                if len(found)<1:
+                                    group.append(pos)
+                                    original.remove(pos)
+                                if i not in found: #don't double add... results in double remove
+                                    found.append(i)
+                    if len(found) > 1: #combine groups
+                        found.sort() #order the groups
+                        remove = sorted(found[1:],reverse=True) #create a list of lists to move
+                        for i in remove:
+                            groups[found[0]] += groups[i]
+                            groups.pop(i)
+
+            if(len(groups)>1):
+                #out with the old, in with the new
+                self.groups[EMPTY].pop(index)
+                for g in groups:
+                    self.groups[EMPTY].append(g)
                 
     def is_neighbour(self,pos1,pos2):
         '''Utility function for testing if one function is a neighbour of another.
