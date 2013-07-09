@@ -64,10 +64,13 @@ class Board:
         self.groups = {}
         self.groups[WHITE] = None
         self.groups[BLACK] = None
+        
         self.goban = {} #actual board
         #Create and initialize board as empty size*size
         for pos in self.iterate_goban():
             self.goban[pos] = EMPTY
+        #empty groups
+        self.groups[EMPTY] = self.goban.keys()
 
     def iterate_goban(self):
         """This goes trough all positions in goban
@@ -216,32 +219,32 @@ class Board:
                     pos_list.append(pos3)
         return liberty_count
 
-    def get_group_liberties(self, pos):
+    def group(self, pos):
+        '''Find the group that pos exists in
         '''
-        Assert: pos is a legal position (not PASS or greater than size)
+        for g in self.groups[self.goban[pos]]:
+            if pos in g:
+                return g
+        return None
 
-        Changed from dict to list for output.
+    def liberties_pos(self, pos):
+        '''Find liberties given a pos attached to a group
         '''
-        group = self.get_group(pos)
-        output = []
-        for pos2 in group:
-            some_liberties = self.liberties(pos2) #this only returns an int
-            for lib in some_liberties:
-                if lib not in output:
-                    output.append(lib)
-    
-    def get_group(self, pos):
-        '''
-        Assert: pos is a legal position (not PASS or greater than size)
+        color = self.goban[pos]
+        group = self.group(pos)
+        if group:
+            return self.liberties_group(group)
+        return None
 
-        Changed from dict to list for output.
+    def liberties_group(self, group):
+        '''Find liberties given group(list of points)
         '''
-        group_color = self.goban[pos]
-        group = []
-        for pos2 in self.iterate_neighbour(pos):
-            if self.goban[pos2] == group_color:
-                group.append(pos2)
-        return group
+        liberties = {}
+        for pos in group:
+            for neighbour in self.iterate_neighbour(pos):
+                if self.goban[neighbour] == EMPTY:
+                    liberties[neighbour] = True
+        return liberties.keys()
 
     def remove_group(self,  pos):
         """Recursively remove given group from board and updating capture counts.
@@ -288,13 +291,13 @@ class Board:
                 # Found in multiple groups
                 elif len(groups) > 1:
                     groups.sort() #order the groups
-                    move = sorted(groups[1:],reverse=True) #create a list of lists to move
-                    for i in move:
+                    remove = sorted(groups[1:],reverse=True) #create a list of lists to move
+                    for i in remove:
                         self.groups[self.side][groups[0]] += self.groups[self.side][i]
                         self.groups[self.side].pop(i)
 
             # check if a group was captured and needs to be removed
-            remove_color = other_side[self.side] 
+            remove_color = other_side[self.side]
             for pos in self.iterate_neighbour(move):
                 if self.goban[pos]==remove_color and self.liberties(pos)==0:
                     self.remove_group(pos)
