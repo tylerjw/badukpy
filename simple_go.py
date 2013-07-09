@@ -61,6 +61,9 @@ class Board:
         self.captures = {} #number of stones captured
         self.captures[WHITE] = 0
         self.captures[BLACK] = 0
+        self.groups = {}
+        self.groups[WHITE] = None
+        self.groups[BLACK] = None
         self.goban = {} #actual board
         #Create and initialize board as empty size*size
         for pos in self.iterate_goban():
@@ -256,16 +259,51 @@ class Board:
               Returns move or None if illegl.
               First we check given move for legality.
               Then we make move and remove captured opponent groups if there are any.
+
+              Keeps track of groups lists
         """
         if move==PASS_MOVE:
             self.change_side()
             return move
         if self.legal_move(move):
             self.goban[move] = self.side
+            
+            # is this the first move
+            if self.groups[self.side] == None:
+                self.groups[self.side] = [[move]]
+            else:
+                # update group lists
+                groups = []
+                # Does this move connect to an existing group
+                for neighbour in self.iterate_neighbour(move):
+                    for i, group in enumerate(self.groups[self.side]):
+                        if neighbour in group:
+                            if(len(groups)==0): #only add to the first one
+                                group.append(move)
+                            if i not in groups: #prevent multiple additions
+                                groups.append(i)
+                # Was not found
+                if len(groups) == 0:
+                    self.groups[self.side].append([move])
+                # Found in multiple groups
+                elif len(groups) > 1:
+                    groups.sort() #order the groups
+                    move = sorted(groups[1:],reverse=True) #create a list of lists to move
+                    for i in move:
+                        self.groups[self.side][groups[0]] += self.groups[self.side][i]
+                        self.groups[self.side].pop(i)
+
+            # check if a group was captured and needs to be removed
             remove_color = other_side[self.side] 
             for pos in self.iterate_neighbour(move):
                 if self.goban[pos]==remove_color and self.liberties(pos)==0:
                     self.remove_group(pos)
+                    # remove from groups list
+                    for i,group in enumerate(self.groups[remove_color]):
+                        if pos in group:
+                            self.groups[remove_color].pop(i)
+                            break
+                    
             self.change_side()
             return move
         return None
@@ -279,8 +317,8 @@ class Board:
         s = s + "White: " + str(self.captures[WHITE])
         s = s + " Black: " + str(self.captures[BLACK]) + "\n"
         s = s + "Chains: \n"
-        s = s + "Black: " + str(self.print_chains(self.get_chains(self.get_pos_list(BLACK)))) + '\n'
-        s = s + "White: " + str(self.print_chains(self.get_chains(self.get_pos_list(WHITE)))) + '\n'
+        s = s + "Black: " + str(self.print_chains(self.groups[BLACK])) + '\n'
+        s = s + "White: " + str(self.print_chains(self.groups[WHITE])) + '\n'
         board_x_coords = "   " + x_coords_string[:self.size]
         s = s + board_x_coords + "\n"
         s = s + "  +" + "-"*self.size + "+\n"
@@ -396,29 +434,6 @@ def main():
             break
         
 def grouping_test():
-    '''
-    For testing Board.get_group() and Board.get_group_liberties()
-    Issue 1:
-    line 226, in get_group, group_color = self.goban[pos], KeyError: (-1, -1)
-        Assert: pos is a legal position (not PASS_MOVE or greater than size)
-
-    Issue 2:
-    line 236, in get_group,group.append(pos2),AttributeError: 'dict' object has no attribute 'append'
-    Changed from dict to list for output.
-
-    Issue 3:
-    line 225, in get_group_liberties, some_liberties = liberties(self, pos2),
-        TypeError: 'list' object is not callable
-    liberties(self,pos2) -> self.liberties(pos2)
-    liberties = [] -> output
-
-    Issue 4:
-    line 226, in get_group_liberties, for lib in some_liberties:
-        TypeError: 'int' object is not iterable
-    liberties() method returns an int number of liberties of the group
-        connected to the position passed to it, not a list of liberties.
-        Commented out to continue testing get_group
-    '''
     size = 5
     g = Game(size)
     for i in range(15):
@@ -426,9 +441,6 @@ def grouping_test():
         g.make_move(move)
         print move_as_string(move, g.size)
         print g.current_board
-        if move != PASS_MOVE:
-            print g.current_board.get_group(move)
-            #print g.current_board.get_group_liberties(move)
     
 if __name__=="__main__":
     grouping_test()
