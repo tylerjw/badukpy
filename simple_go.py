@@ -214,17 +214,27 @@ class Board:
         return liberty_count
 
     def get_group_liberties(self, pos):
-        group = get_group(self, pos)
-        liberties = {}
+        '''
+        Assert: pos is a legal position (not PASS or greater than size)
+
+        Changed from dict to list for output.
+        '''
+        group = self.get_group(pos)
+        output = []
         for pos2 in group:
-            some_liberties = liberties(self, pos2)
+            some_liberties = self.liberties(pos2) #this only returns an int
             for lib in some_liberties:
-                if lib not in liberties:
-                    liberties.append(lib)
+                if lib not in output:
+                    output.append(lib)
     
     def get_group(self, pos):
+        '''
+        Assert: pos is a legal position (not PASS or greater than size)
+
+        Changed from dict to list for output.
+        '''
         group_color = self.goban[pos]
-        group = {}
+        group = []
         for pos2 in self.iterate_neighbour(pos):
             if self.goban[pos2] == group_color:
                 group.append(pos2)
@@ -384,7 +394,42 @@ def main():
            g.move_history[-1]==PASS_MOVE and \
            g.move_history[-2]==PASS_MOVE:
             break
+        
+def grouping_test():
+    '''
+    For testing Board.get_group() and Board.get_group_liberties()
+    Issue 1:
+    line 226, in get_group, group_color = self.goban[pos], KeyError: (-1, -1)
+        Assert: pos is a legal position (not PASS_MOVE or greater than size)
 
+    Issue 2:
+    line 236, in get_group,group.append(pos2),AttributeError: 'dict' object has no attribute 'append'
+    Changed from dict to list for output.
+
+    Issue 3:
+    line 225, in get_group_liberties, some_liberties = liberties(self, pos2),
+        TypeError: 'list' object is not callable
+    liberties(self,pos2) -> self.liberties(pos2)
+    liberties = [] -> output
+
+    Issue 4:
+    line 226, in get_group_liberties, for lib in some_liberties:
+        TypeError: 'int' object is not iterable
+    liberties() method returns an int number of liberties of the group
+        connected to the position passed to it, not a list of liberties.
+        Commented out to continue testing get_group
+    '''
+    size = 5
+    g = Game(size)
+    for i in range(15):
+        move = g.generate_move()
+        g.make_move(move)
+        print move_as_string(move, g.size)
+        print g.current_board
+        if move != PASS_MOVE:
+            print g.current_board.get_group(move)
+            #print g.current_board.get_group_liberties(move)
+    
 if __name__=="__main__":
-    main()
+    grouping_test()
 
