@@ -321,7 +321,8 @@ class Board:
                     # remove from groups list
                     for i,group in enumerate(self.groups[remove_color]):
                         if pos in group:
-                            self.groups[remove_color].pop(i)
+                            temp = self.groups[remove_color].pop(i)
+                            self.groups[EMPTY].append(temp) # if a group is removed, it should be addedd as an empty group.
                             break
                     
             self.change_side() # change side
