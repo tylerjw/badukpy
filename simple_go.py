@@ -70,7 +70,7 @@ class Board:
         for pos in self.iterate_goban():
             self.goban[pos] = EMPTY
         #empty groups
-        self.groups[EMPTY] = self.goban.keys()
+        self.groups[EMPTY] = [self.goban.keys()]
 
     def iterate_goban(self):
         """This goes trough all positions in goban
@@ -257,6 +257,119 @@ class Board:
             if self.goban[pos2] == remove_color:
                 self.remove_group(pos2)
 
+    def update_groups(self, move):
+        ''' utility function for updating groups lists
+            Assert: move already made (not EMPTY)
+        '''
+        # is this the first move
+        if self.groups[self.side] == None:
+            self.groups[self.side] = [[move]]
+        else:
+            # update group lists
+            groups = []
+            # Does this move connect to an existing group
+            for neighbour in self.iterate_neighbour(move):
+                for i, group in enumerate(self.groups[self.side]):
+                    if neighbour in group:
+                        if(len(groups)==0): #only add to the first one
+                            group.append(move)
+                        if i not in groups: #prevent multiple additions
+                            groups.append(i)
+            # Was not found
+            if len(groups) == 0:
+                self.groups[self.side].append([move])
+            # Found in multiple groups
+            elif len(groups) > 1:
+                groups.sort() #order the groups
+                remove = sorted(groups[1:],reverse=True) #create a list of lists to move
+                for i in remove:
+                    self.groups[self.side][groups[0]] += self.groups[self.side][i]
+                    self.groups[self.side].pop(i)
+                    '''
+#####################################################################
+        # update empty groups
+        # remove from empty group
+        index = 0
+        for i,group in enumerate(self.groups[EMPTY]):
+            if move in group:
+                group.remove(move)
+                index = i
+                break
+        # build groups from possible list
+        groups = []
+        original = deepcopy(self.groups[EMPTY][index])
+        while len(original)>0:
+            seen = []
+            pos = original.pop()
+            groups.append([pos])
+            found = False
+            for x in original:
+                if self.is_neighbour(pos,x):
+                    
+                
+            if not found:
+                groups.append([pos])
+                
+        if len(groups)>1: #group split
+            self.groups[EMPTY].pop(index)
+            for group in groups:
+                self.groups[EMPTY].append(group)
+#########################################################################
+        seen_pos = {}
+        liberty_count = 0
+        group_color = self.goban[pos]
+        pos_list = deepcopy(self.groups[EMPTY][index])
+        while pos_list:
+            pos2 = pos_list.pop()
+            if pos2 in seen_pos: continue
+            seen_pos[pos2] = True
+            for pos3 in self.iterate_neighbour(pos2):
+                if pos3 in seen_pos: continue
+#########################################################################
+'''
+        groups = []
+        # remove from empty group
+        index = 0
+        
+        for i,group in enumerate(self.groups[EMPTY]):
+            if move in group:
+                group.remove(move)
+                index = i
+                break
+        original = deepcopy(self.groups[EMPTY][index])
+        for neighbour in self.iterate_neighbour(move):
+            if neighbour in original:
+                groups.append([neighbour])
+                groups.remove(neighbour)
+        while len(original)>0:
+            for pos in original:
+                found = []
+                for i,group in enumerate(groups):
+                    for item in group:
+                        if self.is_neighbour(item,pos):
+                            group.append(pos)
+                            found.append(i)
+                if len(found) > 1: #combine groups
+                    found.sort() #order the groups
+                    remove = sorted(found[1:],reverse=True) #create a list of lists to move
+                    for i in remove:
+                        groups[0] += groups[i]
+                        groups.pop(i)
+
+        if(len(groups)>1):
+            #out with the old, in with the new
+            self.groups[EMPTY].pop(index)
+            for g in groups:
+                self.groups[EMPTY].append(g)
+                
+    def is_neighbour(self,pos1,pos2):
+        '''Utility function for testing if one function is a neighbour of another.
+        '''
+        for n in self.iterate_neighbour(pos1):
+            if n == pos2:
+                return True
+        return False
+
     def make_move(self, move):
         """Make move given in argument.
               Returns move or None if illegl.
@@ -269,32 +382,10 @@ class Board:
             self.change_side()
             return move
         if self.legal_move(move):
-            self.goban[move] = self.side
-            
-            # is this the first move
-            if self.groups[self.side] == None:
-                self.groups[self.side] = [[move]]
-            else:
-                # update group lists
-                groups = []
-                # Does this move connect to an existing group
-                for neighbour in self.iterate_neighbour(move):
-                    for i, group in enumerate(self.groups[self.side]):
-                        if neighbour in group:
-                            if(len(groups)==0): #only add to the first one
-                                group.append(move)
-                            if i not in groups: #prevent multiple additions
-                                groups.append(i)
-                # Was not found
-                if len(groups) == 0:
-                    self.groups[self.side].append([move])
-                # Found in multiple groups
-                elif len(groups) > 1:
-                    groups.sort() #order the groups
-                    remove = sorted(groups[1:],reverse=True) #create a list of lists to move
-                    for i in remove:
-                        self.groups[self.side][groups[0]] += self.groups[self.side][i]
-                        self.groups[self.side].pop(i)
+            self.goban[move] = self.side #make move
+
+            # update groups
+            self.update_groups(move)
 
             # check if a group was captured and needs to be removed
             remove_color = other_side[self.side]
@@ -307,7 +398,7 @@ class Board:
                             self.groups[remove_color].pop(i)
                             break
                     
-            self.change_side()
+            self.change_side() # change side
             return move
         return None
 
@@ -322,6 +413,7 @@ class Board:
         s = s + "Chains: \n"
         s = s + "Black: " + str(self.print_chains(self.groups[BLACK])) + '\n'
         s = s + "White: " + str(self.print_chains(self.groups[WHITE])) + '\n'
+        s = s + "Empty: " + str(self.print_chains(self.groups[EMPTY])) + '\n'
         board_x_coords = "   " + x_coords_string[:self.size]
         s = s + board_x_coords + "\n"
         s = s + "  +" + "-"*self.size + "+\n"
