@@ -112,18 +112,21 @@ class Board:
                 output.append(pos)
         return output
 
-    def print_chains(self, chains):
+    def print_groups(self, groups):
         """Converts the list of list chains to string format
         """
-        if not chains:
+        if not groups:
             return None
         output = []
-        for chain in chains:
-            line = []
-            for point in chain:
-                line.append(move_as_string(point, self.size))
-            output.append(line)
+        for group in groups:
+            output.append(self.print_group(group))
         return output
+
+    def print_group(self, group):
+        line = []
+        for point in group:
+            line.append(move_as_string(point, self.size))
+        return line
 
     def key(self):
         """This returns unique key for board.
@@ -216,6 +219,79 @@ class Board:
                 if self.goban[neighbour] == EMPTY:
                     liberties[neighbour] = True
         return liberties.keys()
+
+    def is_vital(self, group, empty_group):
+        '''Find empty groups that neighbor the given group
+        Vital: All empty points are also liberties to the chain.
+        '''
+        liberties = self.liberties_group(group)
+        for pos in empty_group:
+            if pos not in liberties:
+                return False
+        return True
+
+    def get_alive(self, color):
+        '''
+        Initially, let X be the set of Black chains, and let R be the
+        set of Black-enclosed regions of X. We perform the following
+        two steps repeatedly:
+
+        1.Remove from X all Black chains with less than two vital
+        Black-enclosed regions in R.
+        2.Remove from R all Black-enclosed regions with a surrounding
+        stone in a chain not in X. 
+
+        We stop the algorithm when either step fails to remove any item.
+        The resultant set X is then the desired set of unconditionally
+        alive Black chains.
+        '''
+
+        repeat = True
+        X = deepcopy(self.groups[color])
+        X_flat = []
+        for group in X:
+            for pos in group:
+                X_flat.append(pos)
+                
+        R = deepcopy(self.groups[EMPTY])
+        while repeat:
+            repeat = False
+            X_rem = []
+            for i,group in enumerate(X):
+                vital = 0
+                for region in R:
+                    if self.is_vital(group,region):
+                        vital += 1
+                if vital < 2:
+                    repeat = True
+                    X_rem.append(i)
+                    for pos in group:
+                        X_flat.remove(pos)
+            X_rem.reverse()
+            for i in X_rem:
+                X.pop(i)
+            R_rem = []
+            for i,region in enumerate(R):
+                for pos in region:
+                    flag = False
+                    for nei in self.iterate_neighbour(pos):
+                        if self.goban[nei] != EMPTY and (nei not in X_flat):
+                            #the other color is a neighbour or a point not in X of the same color
+                            repeat = True
+                            flat = True
+                            if i not in R_rem:
+                                R_rem.append(i)
+                            break
+                    if flag: break
+            R_rem.reverse()
+            for i in R_rem:
+                R.pop(i)
+
+            if (len(X) == 0):
+                repeat = False
+                
+        return X
+                
 
     def remove_group(self,  pos):
         """Recursively remove given group from board and updating capture counts.
@@ -372,10 +448,10 @@ class Board:
         s = s + "Captured stones: "
         s = s + "White: " + str(self.captures[WHITE])
         s = s + " Black: " + str(self.captures[BLACK]) + "\n"
-        s = s + "Chains: \n"
-        s = s + "Black: " + str(self.print_chains(self.groups[BLACK])) + '\n'
-        s = s + "White: " + str(self.print_chains(self.groups[WHITE])) + '\n'
-        s = s + "Empty: " + str(self.print_chains(self.groups[EMPTY])) + '\n'
+        s = s + "Groups: \n"
+        s = s + "Black: " + str(self.print_groups(self.groups[BLACK])) + '\n'
+        s = s + "White: " + str(self.print_groups(self.groups[WHITE])) + '\n'
+        s = s + "Empty: " + str(self.print_groups(self.groups[EMPTY])) + '\n'
         board_x_coords = "   " + x_coords_string[:self.size]
         s = s + board_x_coords + "\n"
         s = s + "  +" + "-"*self.size + "+\n"
@@ -493,12 +569,31 @@ def main():
 def grouping_test():
     size = 5
     g = Game(size)
-    for i in range(15):
+    for i in range(20):
         move = g.generate_move()
         g.make_move(move)
         print move_as_string(move, g.size)
         print g.current_board
+
+def life_test():
+    size = 5
+    g = Game(size)
+    black = ['A5','A4','B4','C4','C5','D4','E4']
+    white = ['A2','B2','B1','C2','D2','E2','E3']
+    moves = []
+    for i in range(7):
+        moves.append(string_as_move(black[i], g.size))
+        moves.append(string_as_move(white[i], g.size))
+
+    for m in moves:
+        g.make_move(m)
+        print g.current_board
+
+    print "Unconditionally Alive:"
+    print "Black: ",g.current_board.print_groups(g.current_board.get_alive(BLACK))
+    print "White: ",g.current_board.print_groups(g.current_board.get_alive(WHITE))
+        
     
 if __name__=="__main__":
-    grouping_test()
+    life_test()
 
