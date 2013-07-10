@@ -72,6 +72,18 @@ class Board:
         #empty groups
         self.groups[EMPTY] = [self.goban.keys()]
 
+    def __eq__(left, right):
+        if (left.captures == right.captures and
+            left.groups == right.groups and
+            left.goban == right.goban):
+            return True
+        return False
+
+    def __ne__(left, right):
+        if not left.__eq__(right):
+            return True
+        return False
+
     def iterate_goban(self):
         """This goes trough all positions in goban
               Example usage: see above __init__ method
@@ -216,9 +228,31 @@ class Board:
             if self.goban[pos2] == remove_color:
                 self.remove_group(pos2)
 
-    def update_groups(self, move):
+    def __update_groups(self, move):
         ''' utility function for updating groups lists
             Assert: move already made (not EMPTY)
+
+        1. If there are no groups for given side just create a new group
+        and assign the point.
+        2. Look at all neighbors of move and see if it connects to an
+        existing group, if so add to that group.
+        3. Test to see if this move combined groups, if so combine the
+        groups
+        4. If move did not join existing group, create new group with
+        move
+        5. Remove the position from the empty group it is in and note the
+        index of that group
+        6. If the position removed was the last one to be removed from the
+        group, delete the group and be done
+        7. There could be up to 4 empty groups broken off by playing a
+        stone, check to see if neighbors of move are in the empty group
+        just played into, and if so create new temporary groups with each
+        of them.
+        8. Going point by point until all points find a home check to see
+        if they neighbor any point in a given group
+        9. If they neighbor points in two groups those groups get combined
+        10. If the resulting list of temporary groups has more than 1
+        group, pop off the old empty group and add the new split ones
         '''
         # is this the first move
         if self.groups[self.side] == None:
@@ -311,7 +345,7 @@ class Board:
             self.goban[move] = self.side #make move
 
             # update groups
-            self.update_groups(move)
+            self.__update_groups(move)
 
             # check if a group was captured and needs to be removed
             remove_color = other_side[self.side]
@@ -322,7 +356,8 @@ class Board:
                     for i,group in enumerate(self.groups[remove_color]):
                         if pos in group:
                             temp = self.groups[remove_color].pop(i)
-                            self.groups[EMPTY].append(temp) # if a group is removed, it should be addedd as an empty group.
+                            # if a group is removed, it should be addedd as an empty group.
+                            self.groups[EMPTY].append(temp) 
                             break
                     
             self.change_side() # change side
