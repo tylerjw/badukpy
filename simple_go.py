@@ -65,6 +65,9 @@ class Board:
         self.groups[WHITE] = None
         self.groups[BLACK] = None
         
+        self.territory_white = 0
+        self.territory_black = 0
+
         self.goban = {} #actual board
         #Create and initialize board as empty size*size
         for pos in self.iterate_goban():
@@ -160,6 +163,28 @@ class Board:
             if self.goban[pos]==other_side[self.side] and self.liberties(pos)==1: return True
         return False
 
+    def calculate_territory(self):
+        """
+            Calculate territory for both colors.
+            To calculate actual score see Game class
+        """
+        liberty_pos_white = []
+        liberty_pos_black = []
+        
+        for group in self.groups[WHITE]:
+            liberty_pos_white.append(liberties_group(group))
+            
+        for group in self.groups[BLACK]:
+            liberty_pos_black.append(liberties_group(group))
+            
+        for pos in liberty_pos_white:
+            if pos in liberty_pos_black:
+                liberty_pos_white.remove(pos)
+                liberty_pos_black.remove(pos)
+                
+        self.territory_white = liberty_pos_white.length
+        self.territory_black = liberty_pos_black.length
+
     def liberties(self, pos):
         """Count liberties for group at given position.
               Returns number of liberties.
@@ -219,6 +244,8 @@ class Board:
                 if self.goban[neighbour] == EMPTY:
                     liberties[neighbour] = True
         return liberties.keys()
+
+    
 
     def is_vital(self, group, empty_group):
         '''Find empty groups that neighbor the given group
@@ -440,6 +467,13 @@ class Board:
             return move
         return None
 
+    def put_stone(self, pos, color):
+        """
+            Might need this to handle handicap stones and have make_move-like methods
+            handle more complex tasks (de-coupling between make a move and the whole logic behind it)
+        """
+        self.goban[pos] = color
+
     def __str__(self):
         """Convert position to string suitable for printing to screen.
               Returns board as string.
@@ -481,6 +515,9 @@ class Game:
         #for super-ko detection
         self.position_seen = {}
         self.position_seen[self.current_board.key()] = True
+        
+        #TODO: handle komi?
+        self.komi = 6.5
 
     def make_move_in_new_board(self, move):
         """This is utility method.
@@ -531,6 +568,10 @@ class Game:
             del self.position_seen[self.current_board.key()]
         self.current_board = self.board_history.pop()
         return self.current_board
+
+    def calculate_score(self):
+        Board.calculate_territory()
+        Board.territory_white = Board.territory_white + self.komi
 
     def list_moves(self):
         """return all legal moves including pass move
