@@ -49,9 +49,11 @@ class Window(Frame):
             #remove
             self.canvas.delete(str(move))
         else:
-            (x,y) = self.translate(move)
-            self.canvas.create_oval(x,y,x+50,y+50,fill=draw_color[color],
-                                    tags=(str(move),draw_color[color]))
+            if not self.canvas.find_withtag(str(move)):
+                print self.canvas.find_withtag(str(move))
+                (x,y) = self.translate(move)
+                self.canvas.create_oval(x,y,x+50,y+50,fill=draw_color[color],
+                                        tags=(str(move),draw_color[color]))
 
     def __redraw_board(self,board):
         ''' redraw the board '''
