@@ -11,18 +11,17 @@ from copy import deepcopy
 draw_color = {BLACK:'black', WHITE:'white'}
 
 class Window(Frame):
-    def __init__(self,game,master=None):
+    def __init__(self,game,canvas_hw,master=None):
         Frame.__init__(self,master) #call superclass constructor
         self.pack(padx=15,pady=15)
-
+        
         self.game = game
         self.size = self.game.size
-        self.line_xy = [50] #for drawing lines
+        self.canvas_hw = canvas_hw
+        self.cir_d = self.canvas_hw/(self.size+1)  #circle diameter
+        self.line_xy = [self.cir_d] #for drawing lines
         for i in range(self.size):
-            self.line_xy.append(self.line_xy[i]+50)
-        self.cir_d = 50  #circle diameter
-
-        self.canvas_hw = 100 + (self.size-1) * 50
+            self.line_xy.append(self.line_xy[i]+self.cir_d)
 
         self.stones = {}
         
@@ -30,9 +29,9 @@ class Window(Frame):
         #draw lines
         for i in range(self.size):
             #vertical
-            self.canvas.create_line(self.line_xy[i],50,self.line_xy[i],self.canvas_hw-50,width=3)
+            self.canvas.create_line(self.line_xy[i],self.cir_d,self.line_xy[i],self.canvas_hw-self.cir_d,width=3)
             #horizontal
-            self.canvas.create_line(50,self.line_xy[i],self.canvas_hw-50,self.line_xy[i],width=3)
+            self.canvas.create_line(self.cir_d,self.line_xy[i],self.canvas_hw-self.cir_d,self.line_xy[i],width=3)
 
         self.canvas.pack()
 
@@ -41,7 +40,7 @@ class Window(Frame):
         
     def translate(self,move):
         ''' method for finding the x,y pos to draw a move at x,y(board coords)'''
-        return (25 + (move[0]-1)*50,25 + (move[1]-1)*50)
+        return ((self.cir_d/2) + (move[0]-1)*self.cir_d,(self.cir_d/2) + (move[1]-1)*self.cir_d)
         
     def __draw_stone(self,move,color):
         ''' draws a stone '''
@@ -51,7 +50,7 @@ class Window(Frame):
         else:
             if not self.canvas.find_withtag(str(move)):
                 (x,y) = self.translate(move)
-                self.canvas.create_oval(x,y,x+50,y+50,fill=draw_color[color],
+                self.canvas.create_oval(x,y,x+self.cir_d,y+self.cir_d,fill=draw_color[color],
                                         tags=(str(move),draw_color[color]))
 
     def __redraw_board(self,board):
@@ -79,6 +78,6 @@ class Window(Frame):
 if __name__ == '__main__':
     size = 9
     g = Game(size)
-    Window(g).mainloop()
+    Window(g,600).mainloop()
             
         
