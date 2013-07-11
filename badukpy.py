@@ -36,7 +36,7 @@ class Window(Frame):
 
         self.canvas.pack()
 
-        self.moves_remaining = 20
+        self.moves_remaining = 80
         self.random_game()
         
     def translate(self,move):
@@ -50,7 +50,6 @@ class Window(Frame):
             self.canvas.delete(str(move))
         else:
             if not self.canvas.find_withtag(str(move)):
-                print self.canvas.find_withtag(str(move))
                 (x,y) = self.translate(move)
                 self.canvas.create_oval(x,y,x+50,y+50,fill=draw_color[color],
                                         tags=(str(move),draw_color[color]))
@@ -78,7 +77,7 @@ class Window(Frame):
                 
 
 if __name__ == '__main__':
-    size = 5
+    size = 9
     g = Game(size)
     Window(g).mainloop()
             

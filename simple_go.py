@@ -426,6 +426,10 @@ class Board:
                         for i in remove:
                             groups[found[0]] += groups[i]
                             groups.pop(i)
+                    if len(groups) == 1:
+                        done = True
+                        break
+                if done: break
 
             if(len(groups)>1):
                 #out with the old, in with the new
