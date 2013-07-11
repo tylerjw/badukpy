@@ -30,9 +30,9 @@ class Window(Frame):
         #draw lines
         for i in range(self.size):
             #vertical
-            self.canvas.create_line(self.line_xy[i],0,self.line_xy[i],self.canvas_hw,width=3)
+            self.canvas.create_line(self.line_xy[i],50,self.line_xy[i],self.canvas_hw-50,width=3)
             #horizontal
-            self.canvas.create_line(0,self.line_xy[i],self.canvas_hw,self.line_xy[i],width=3)
+            self.canvas.create_line(50,self.line_xy[i],self.canvas_hw-50,self.line_xy[i],width=3)
 
         self.canvas.pack()
         
