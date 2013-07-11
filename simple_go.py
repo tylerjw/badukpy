@@ -163,27 +163,45 @@ class Board:
             if self.goban[pos]==other_side[self.side] and self.liberties(pos)==1: return True
         return False
 
-    def calculate_territory(self):
+    def count_territory(self):
         """
             Calculate territory for both colors.
             To calculate actual score see Game class
+
+            Japanese Counting
+            1. the number of empty points your stones surround and
+            2. the number of your opponent's stones you've captured
+            (both during the game, and dead stones on the board at the end) 
         """
-        liberty_pos_white = []
-        liberty_pos_black = []
+        liberties_white = []
+        liberties_black = []
         
         for group in self.groups[WHITE]:
-            liberty_pos_white.append(liberties_group(group))
+            liberties_white += self.liberties_group(group)
             
         for group in self.groups[BLACK]:
-            liberty_pos_black.append(liberties_group(group))
-            
-        for pos in liberty_pos_white:
-            if pos in liberty_pos_black:
-                liberty_pos_white.remove(pos)
-                liberty_pos_black.remove(pos)
+            liberties_black += self.liberties_group(group)
+
+        print 'liberties_white',self.print_group(liberties_white)
+        print 'liberties_black',self.print_group(liberties_black)
+        print ''
+
+        remove = []
+        for pos in liberties_white:
+            if pos in liberties_black:
+                remove.append(pos)
+        for pos in remove:
+            liberties_white.remove(pos)
+            liberties_black.remove(pos)
+
+        print 'liberties_white',self.print_group(liberties_white)
+        print 'liberties_black',self.print_group(liberties_black)
                 
-        self.territory_white = liberty_pos_white.length
-        self.territory_black = liberty_pos_black.length
+        self.territory_white = len(liberties_white) + self.captures[WHITE]
+        self.territory_black = len(liberties_black) + self.captures[BLACK]
+
+        print 'self.territory_white',self.territory_white
+        print 'self.territory_black',self.territory_black
 
     def liberties(self, pos):
         """Count liberties for group at given position.
@@ -433,7 +451,7 @@ class Board:
                 return True
         return False
 
-    def make_move(self, move):
+    def make_move(self, move, change_sides=True):
         """Make move given in argument.
               Returns move or None if illegl.
               First we check given move for legality.
@@ -442,7 +460,7 @@ class Board:
               Keeps track of groups lists
         """
         if move==PASS_MOVE:
-            self.change_side()
+            if change_sides: self.change_side()
             return move
         if self.legal_move(move):
             self.goban[move] = self.side #make move
@@ -463,16 +481,9 @@ class Board:
                             self.groups[EMPTY].append(temp) 
                             break
                     
-            self.change_side() # change side
+            if change_sides: self.change_side() # change side
             return move
         return None
-
-    def put_stone(self, pos, color):
-        """
-            Might need this to handle handicap stones and have make_move-like methods
-            handle more complex tasks (de-coupling between make a move and the whole logic behind it)
-        """
-        self.goban[pos] = color
 
     def __str__(self):
         """Convert position to string suitable for printing to screen.
@@ -569,9 +580,13 @@ class Game:
         self.current_board = self.board_history.pop()
         return self.current_board
 
-    def calculate_score(self):
-        Board.calculate_territory()
-        Board.territory_white = Board.territory_white + self.komi
+    def score(self):
+        ''' Get the current score
+        '''
+        self.current_board.count_territory()
+        self.current_board.territory_white += self.komi
+
+        return (self.current_board.territory_black, self.current_board.territory_white)
 
     def list_moves(self):
         """return all legal moves including pass move
@@ -633,7 +648,11 @@ def life_test():
     print "Unconditionally Alive:"
     print "Black: ",g.current_board.print_groups(g.current_board.get_alive(BLACK))
     print "White: ",g.current_board.print_groups(g.current_board.get_alive(WHITE))
-        
+
+    score = g.score()
+    print "Score"
+    print "Black: ",score[0]
+    print "White: ",score[1]
     
 if __name__=="__main__":
     life_test()
