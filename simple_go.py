@@ -182,10 +182,6 @@ class Board:
         for group in self.groups[BLACK]:
             liberties_black += self.liberties_group(group)
 
-        print 'liberties_white',self.print_group(liberties_white)
-        print 'liberties_black',self.print_group(liberties_black)
-        print ''
-
         remove = []
         for pos in liberties_white:
             if pos in liberties_black:
@@ -193,15 +189,9 @@ class Board:
         for pos in remove:
             liberties_white.remove(pos)
             liberties_black.remove(pos)
-
-        print 'liberties_white',self.print_group(liberties_white)
-        print 'liberties_black',self.print_group(liberties_black)
                 
         self.territory_white = len(liberties_white) + self.captures[WHITE]
         self.territory_black = len(liberties_black) + self.captures[BLACK]
-
-        print 'self.territory_white',self.territory_white
-        print 'self.territory_black',self.territory_black
 
     def liberties(self, pos):
         """Count liberties for group at given position.
