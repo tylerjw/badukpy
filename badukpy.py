@@ -19,10 +19,10 @@ class Window(Frame):
         self.size = self.game.size
         self.line_xy = [50] #for drawing lines
         for i in range(self.size):
-            self.line_xy.append(self.line_xy[i]+75)
+            self.line_xy.append(self.line_xy[i]+50)
         self.cir_d = 50  #circle diameter
 
-        self.canvas_hw = 100 + (self.size-1) * 75
+        self.canvas_hw = 100 + (self.size-1) * 50
 
         self.stones = {}
         
@@ -35,10 +35,13 @@ class Window(Frame):
             self.canvas.create_line(50,self.line_xy[i],self.canvas_hw-50,self.line_xy[i],width=3)
 
         self.canvas.pack()
+
+        self.moves_remaining = 20
+        self.random_game()
         
     def translate(self,move):
         ''' method for finding the x,y pos to draw a move at x,y(board coords)'''
-        return (25 + (move[0]-1)*75,25 + (move[1]-1)*75)
+        return (25 + (move[0]-1)*50,25 + (move[1]-1)*50)
         
     def __draw_stone(self,move,color):
         ''' draws a stone '''
@@ -61,17 +64,20 @@ class Window(Frame):
         board = self.game.make_move(move)
         if board: # will be None if non-legal move
             self.__redraw_board(board)
+
+    def random_game(self):
+        if self.moves_remaining == 0:
+            return
+        else:
+            self.moves_remaining -= 1
+            move = self.game.generate_move()
+            self.make_move(move)
+            self.after(100,self.random_game)
                 
 
 if __name__ == '__main__':
     size = 5
     g = Game(size)
-    gui = Window(g)
-
-    for i in range(20):
-        move = g.generate_move()
-        gui.make_move(move)
-
-    gui.mainloop()
+    Window(g).mainloop()
             
         
