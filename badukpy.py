@@ -14,7 +14,7 @@ class Window(Frame):
     def __init__(self,game,canvas_hw,master=None):
         Frame.__init__(self,master) #call superclass constructor
         self.pack(padx=15,pady=15)
-        
+
         self.game = game
         self.size = self.game.size
         self.canvas_hw = canvas_hw
@@ -24,7 +24,7 @@ class Window(Frame):
             self.line_xy.append(self.line_xy[i]+self.cir_d)
 
         self.stones = {}
-        
+
         self.canvas = Canvas(self,width=self.canvas_hw,height=self.canvas_hw)
         #draw lines
         for i in range(self.size):
@@ -39,22 +39,25 @@ class Window(Frame):
         self.make_move(move)
         self.canvas.bind('<Button-1>', self.mousepress)
 
-    def mousepress(self,event):
-        x = ((event.x - self.cir_d/2) / self.cir_d) + 1
-        y = ((event.y - self.cir_d/2) / self.cir_d) + 1
-        move = (x,y)
+    def mousepress(self, event):
+        move = self.coordinateToMove(event.x, event.y)
         #test if move is valid
-        if ((0 < x < (1+self.size)) and (0 < y < (1+self.size)) and
-            self.game.legal_move(move)):
+        if ((0 < move[0] < (1 + self.size)) and (0 < move[1] < (1 + self.size))
+            and self.game.legal_move(move)):
             self.make_move(move)
             move = self.game.generate_move()
             self.make_move(move)
             print "(black,white): ", g.score()
-        
+
+    def coordinateToMove(self, x, y):
+        x1 = ((x - self.cir_d / 2) / self.cir_d) + 1
+        y1 = ((y - self.cir_d / 2) / self.cir_d) + 1
+        return (x1, y1)
+
     def translate(self,move):
         ''' method for finding the x,y pos to draw a move at x,y(board coords)'''
         return ((self.cir_d/2) + (move[0]-1)*self.cir_d,(self.cir_d/2) + (move[1]-1)*self.cir_d)
-        
+
     def __draw_stone(self,move,color):
         ''' draws a stone '''
         if color == EMPTY:
@@ -71,7 +74,7 @@ class Window(Frame):
         # check for differences between board.goban and self.stones
         for move,color in board.goban.items():
             self.__draw_stone(move,color)
-        
+
 
     def make_move(self,move):
         board = self.game.make_move(move)
@@ -86,11 +89,11 @@ class Window(Frame):
             move = self.game.generate_move()
             self.make_move(move)
             self.after(100,self.random_game)
-                
+
 
 if __name__ == '__main__':
     size = 13
     g = Game(size)
     Window(g,600).mainloop()
-            
-        
+
+
