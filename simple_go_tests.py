@@ -109,6 +109,17 @@ class TestSequenceFunctions(unittest.TestCase):
             self.assertEqual(simple_go.move_as_string(pos, self.size), string)
             self.assertEqual(simple_go.string_as_move(string, self.size), pos)
 
+    def test_group_territory(self):
+        for i in range(1, 11):
+            self.board.make_move((1, i), False)
+            self.board.make_move((i, 11), False)
+            self.board.make_move((11, i), False)
+            self.board.make_move((i, 1), False)
+
+        print self.board
+        group = self.board.groups[simple_go.BLACK][0]
+        self.assertEqual(len(self.board.group_territory(group)), 81)
+
 if __name__ == '__main__':
     unittest.main()
 

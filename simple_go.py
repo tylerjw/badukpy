@@ -11,14 +11,14 @@
 
 #Why at Senseis?
 #Goal is to illustrate Go programming and not to code another "GnuGo".
-#Senseis looks like good place to co-operatively write text and 
+#Senseis looks like good place to co-operatively write text and
 #create diagrams to illustrate algorithms.
 #So main focus is in explaining code.
 #Also possibility is to crosslink between concepts and documented code.
 
 
 import re, string, time, random, sys
-#from types import * ??? what is this ??? commented out to see if it'll break 
+#from types import * ??? what is this ??? commented out to see if it'll break
 from math import sqrt
 from copy import deepcopy
 
@@ -57,18 +57,18 @@ class Board:
               argument: size
         """
         self.size = size
-        self.side = BLACK #side to move
-        self.captures = {} #number of stones captured
+        self.side = BLACK  # side to move
+        self.captures = {}  # number of stones captured
         self.captures[WHITE] = 0
         self.captures[BLACK] = 0
         self.groups = {}
         self.groups[WHITE] = None
         self.groups[BLACK] = None
-        
+
         self.territory_white = 0
         self.territory_black = 0
 
-        self.goban = {} #actual board
+        self.goban = {}  # actual board
         #Create and initialize board as empty size*size
         for pos in self.iterate_goban():
             self.goban[pos] = EMPTY
@@ -91,8 +91,8 @@ class Board:
         """This goes trough all positions in goban
               Example usage: see above __init__ method
         """
-        for x in range(1, self.size+1):
-            for y in range(1, self.size+1):
+        for x in range(1, self.size + 1):
+            for y in range(1, self.size + 1):
                 yield x, y
 
     def iterate_neighbour(self, pos):
@@ -101,8 +101,8 @@ class Board:
               Example usage: see legal_move method
         """
         x, y = pos
-        for x2,y2 in ((x,y-1), (x,y+1), (x-1,y), (x+1,y)):
-            if 1<=x2<=self.size and 1<=y2<=self.size:
+        for x2, y2 in ((x, y - 1), (x, y + 1), (x - 1, y), (x + 1, y)):
+            if 1 <= x2 <= self.size and 1 <= y2 <= self.size:
                 yield (x2, y2)
 
     def get_pos_list(self, side):
@@ -173,6 +173,45 @@ class Board:
 
         return flat
 
+    def group_territory(self, group):
+        """
+        Calculate the territory that each group encloses. This assumes dead stones
+        were already removed from the board
+        """
+        result = []
+
+        xs = [x[0] for x in group]
+        ys = [y[1] for y in group]
+
+        leftMost = min(xs)
+        rightMost = max(xs)
+        upMost = max(ys)
+        downMost = min(ys)
+
+        for i in range(leftMost, rightMost):
+            for k in range(downMost, upMost):
+                thisPos = (i, k)
+                if self.goban[thisPos] != EMPTY:
+                    continue
+                inside_x_right = False
+                inside_x_left = False
+                inside_y_up = False
+                inside_y_down = False
+                for stone in group:
+                    if stone[0] == i:
+                        if stone[1] > k:
+                            inside_y_up = True
+                        if stone[1] < k:
+                            inside_y_down = True
+                    if stone[1] == k:
+                        if stone[0] > i:
+                            inside_x_left = True
+                        if stone[0] < i:
+                            inside_x_right = True
+                if inside_x_right and inside_x_left and inside_y_up and inside_y_down:
+                    result.append(thisPos)
+        return result
+
     def count_territory(self):
         """
             Calculate territory for both colors.
@@ -181,19 +220,15 @@ class Board:
             Japanese Counting
             1. the number of empty points your stones surround and
             2. the number of your opponent's stones you've captured
-            (both during the game, and dead stones on the board at the end) 
+            (both during the game, and dead stones on the board at the end)
         """
-        liberties_white = self.liberties_group(self.flatten(self.groups[WHITE]))
-        liberties_black = self.liberties_group(self.flatten(self.groups[BLACK]))
+        liberties_white = []
+        liberties_black = []
 
-        remove = []
-        for pos in liberties_white:
-            if pos in liberties_black:
-                remove.append(pos)
-
-        for pos in remove:
-            liberties_black.remove(pos)
-            liberties_white.remove(pos)            
+        for group in self.groups[WHITE]:
+            liberties_white.add(self.group_territory(group))
+        for group in self.groups[BLACK]:
+            liberties_black.add(self.group_territory(group))
 
         #add points for the captures of the other side
         self.territory_white = len(liberties_white) + self.captures[BLACK]
@@ -259,7 +294,7 @@ class Board:
                     liberties[neighbour] = True
         return liberties.keys()
 
-    
+
 
     def is_vital(self, group, empty_group):
         '''Find empty groups that neighbor the given group
@@ -280,7 +315,7 @@ class Board:
         1.Remove from X all Black chains with less than two vital
         Black-enclosed regions in R.
         2.Remove from R all Black-enclosed regions with a surrounding
-        stone in a chain not in X. 
+        stone in a chain not in X.
 
         We stop the algorithm when either step fails to remove any item.
         The resultant set X is then the desired set of unconditionally
@@ -293,7 +328,7 @@ class Board:
         for group in X:
             for pos in group:
                 X_flat.append(pos)
-                
+
         R = deepcopy(self.groups[EMPTY])
         while repeat:
             repeat = False
@@ -330,9 +365,9 @@ class Board:
 
             if (len(X) == 0):
                 repeat = False
-                
+
         return X
-                
+
 
     def remove_group(self,  pos):
         """Recursively remove given group from board and updating capture counts.
@@ -442,7 +477,7 @@ class Board:
                 self.groups[EMPTY].pop(index)
                 for g in groups:
                     self.groups[EMPTY].append(g)
-                
+
     def is_neighbour(self,pos1,pos2):
         '''Utility function for testing if one function is a neighbour of another.
         '''
@@ -478,9 +513,9 @@ class Board:
                         if pos in group:
                             temp = self.groups[remove_color].pop(i)
                             # if a group is removed, it should be addedd as an empty group.
-                            self.groups[EMPTY].append(temp) 
+                            self.groups[EMPTY].append(temp)
                             break
-                    
+
             if change_sides: self.change_side() # change side
             return move
         return None
@@ -526,7 +561,7 @@ class Game:
         #for super-ko detection
         self.position_seen = {}
         self.position_seen[self.current_board.key()] = True
-        
+
         #TODO: handle komi?
         self.komi = 6.5
 
@@ -621,7 +656,7 @@ def main():
            g.move_history[-1]==PASS_MOVE and \
            g.move_history[-2]==PASS_MOVE:
             break
-        
+
 def grouping_test():
     size = 5
     g = Game(size)
@@ -653,7 +688,7 @@ def life_test():
     print "Score"
     print "Black: ",score[0]
     print "White: ",score[1]
-    
+
 if __name__=="__main__":
     life_test()
 
