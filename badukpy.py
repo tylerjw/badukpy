@@ -5,7 +5,7 @@ gui for badukpy game
 '''
 
 from Tkinter import Frame, Canvas
-from simple_go import Game, BLACK, WHITE, EMPTY
+from simple_go import Game, BLACK, WHITE, EMPTY, move_as_string
 from copy import deepcopy
 
 draw_color = {BLACK:'black', WHITE:'white'}
@@ -33,7 +33,7 @@ class Window(Frame):
             #horizontal
             self.canvas.create_line(self.cir_d,self.line_xy[i],self.canvas_hw-self.cir_d,self.line_xy[i],width=3)
 
-        self.canvas.pack()
+        self.canvas.grid(row=0,column=0,sticky='w')
 
         move = self.game.generate_move()
         self.make_move(move)
@@ -49,6 +49,7 @@ class Window(Frame):
             self.make_move(move)
             move = self.game.generate_move()
             self.make_move(move)
+            score = g.score()
         
     def translate(self,move):
         ''' method for finding the x,y pos to draw a move at x,y(board coords)'''
