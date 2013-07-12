@@ -35,6 +35,8 @@ class Window(Frame):
 
         self.canvas.pack()
 
+        move = self.game.generate_move()
+        self.make_move(move)
         self.canvas.bind('<Button-1>', self.mousepress)
 
     def mousepress(self,event):
@@ -44,6 +46,8 @@ class Window(Frame):
         #test if move is valid
         if ((0 < x < (1+self.size)) and (0 < y < (1+self.size)) and
             not self.canvas.find_withtag(str(move))):
+            self.make_move(move)
+            move = self.game.generate_move()
             self.make_move(move)
         
     def translate(self,move):
@@ -73,8 +77,18 @@ class Window(Frame):
         if board: # will be None if non-legal move
             self.__redraw_board(board)
 
+    def random_game(self):
+        if self.moves_remaining == 0:
+            return
+        else:
+            self.moves_remaining -= 1
+            move = self.game.generate_move()
+            self.make_move(move)
+            self.after(100,self.random_game)
+                
+
 if __name__ == '__main__':
-    size = 19
+    size = 9
     g = Game(size)
     Window(g,600).mainloop()
             
