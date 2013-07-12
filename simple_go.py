@@ -18,7 +18,7 @@
 
 
 import re, string, time, random, sys
-from types import *
+#from types import * ??? what is this ??? commented out to see if it'll break 
 from math import sqrt
 from copy import deepcopy
 
