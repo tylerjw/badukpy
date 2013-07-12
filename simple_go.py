@@ -163,6 +163,16 @@ class Board:
             if self.goban[pos]==other_side[self.side] and self.liberties(pos)==1: return True
         return False
 
+    def flatten(self, groups):
+        '''for flattening groups'''
+        flat = []
+        for group in groups:
+            for pos in group:
+                if pos not in flat:
+                    flat.append(pos)
+
+        return flat
+
     def count_territory(self):
         """
             Calculate territory for both colors.
@@ -173,32 +183,19 @@ class Board:
             2. the number of your opponent's stones you've captured
             (both during the game, and dead stones on the board at the end) 
         """
-        liberties_white = []
-        liberties_black = []
-        
-        for group in self.groups[WHITE]:
-            liberties_white += self.liberties_group(group)
-            
-        for group in self.groups[BLACK]:
-            liberties_black += self.liberties_group(group)
+        liberties_white = self.liberties_group(self.flatten(self.groups[WHITE]))
+        liberties_black = self.liberties_group(self.flatten(self.groups[BLACK]))
 
         remove = []
         for pos in liberties_white:
             if pos in liberties_black:
                 remove.append(pos)
 
-        print "remove",self.print_group(remove)
-        print "white",self.print_group(liberties_white)
-        print "black",self.print_group(liberties_black)
         for pos in remove:
-            try:
-                liberties_white.remove(pos)
-                liberties_black.remove(pos)
-            except:
-                print "******************************************"
-                print "pos",move_as_string(pos,self.size)
-                print "******************************************"                
+            liberties_black.remove(pos)
+            liberties_white.remove(pos)            
 
+        #add points for the captures of the other side
         self.territory_white = len(liberties_white) + self.captures[BLACK]
         self.territory_black = len(liberties_black) + self.captures[WHITE]
 
