@@ -35,8 +35,16 @@ class Window(Frame):
 
         self.canvas.pack()
 
-        self.moves_remaining = 80
-        self.random_game()
+        self.canvas.bind('<Button-1>', self.mousepress)
+
+    def mousepress(self,event):
+        x = ((event.x - self.cir_d/2) / self.cir_d) + 1
+        y = ((event.y - self.cir_d/2) / self.cir_d) + 1
+        move = (x,y)
+        #test if move is valid
+        if ((0 < x < (1+self.size)) and (0 < y < (1+self.size)) and
+            not self.canvas.find_withtag(str(move))):
+            self.make_move(move)
         
     def translate(self,move):
         ''' method for finding the x,y pos to draw a move at x,y(board coords)'''
@@ -65,18 +73,8 @@ class Window(Frame):
         if board: # will be None if non-legal move
             self.__redraw_board(board)
 
-    def random_game(self):
-        if self.moves_remaining == 0:
-            return
-        else:
-            self.moves_remaining -= 1
-            move = self.game.generate_move()
-            self.make_move(move)
-            self.after(100,self.random_game)
-                
-
 if __name__ == '__main__':
-    size = 9
+    size = 19
     g = Game(size)
     Window(g,600).mainloop()
             
