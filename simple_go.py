@@ -201,30 +201,30 @@ class Board:
                 enemy_stones_y = [ePos for ePos in [(i, x) for x in range(downMost, upMost)] if self.goban[ePos] == opposite_side]
                 enemy_stones = enemy_stones_x + enemy_stones_y
 
-                thisPos_in_group = self.check_relative_stone_position(thisPos, group, i, k)
-                thisPos_in_enemy_group = self.check_relative_stone_position(thisPos, enemy_stones, i, k)
+                thisPos_in_group = self.check_relative_stone_position(thisPos, group)
+                thisPos_in_enemy_group = self.check_relative_stone_position(thisPos, enemy_stones)
 
                 if thisPos_in_group and not thisPos_in_enemy_group:
                     result.append(thisPos)
 
         return result
 
-    def check_relative_stone_position(self, stone, group, x, y):
+    def check_relative_stone_position(self, pos, group):
             inside_x_right = False
             inside_x_left = False
             inside_y_up = False
             inside_y_down = False
 
             for stone in group:
-                if stone[0] == x:
-                    if stone[1] > y:
+                if stone[0] == pos[0]:
+                    if stone[1] > pos[1]:
                         inside_y_up = True
-                    if stone[1] < y:
+                    if stone[1] < pos[1]:
                         inside_y_down = True
-                if stone[1] == y:
-                    if stone[0] > x:
+                if stone[1] == pos[1]:
+                    if stone[0] > pos[0]:
                         inside_x_left = True
-                    if stone[0] < x:
+                    if stone[0] < pos[0]:
                         inside_x_right = True
             return inside_x_right and inside_x_left and inside_y_up and inside_y_down
 
