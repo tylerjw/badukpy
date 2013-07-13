@@ -111,15 +111,75 @@ class TestSequenceFunctions(unittest.TestCase):
             self.assertEqual(simple_go.string_as_move(string, self.size), pos)
 
     def test_group_territory(self):
+        # test teritory closed
+        '''
+           ABCDEFGHJKLMN
+          +-------------+
+        13|.............|13
+        12|.............|12
+        11|XXXXXXXXXX...|11
+        10|X.........X..|10
+         9|X.........X..| 9
+         8|X.........X..| 8
+         7|X.........X..| 7
+         6|X.........X..| 6
+         5|X.........X..| 5
+         4|X.........X..| 4
+         3|X.........X..| 3
+         2|X.........X..| 2
+         1|XXXXXXXXXXX..| 1
+          +-------------+
+           ABCDEFGHJKLMN
+        '''
         for i in range(1, 11):
             self.board.make_move((1, i), False)
             self.board.make_move((i, 11), False)
             self.board.make_move((11, i), False)
             self.board.make_move((i, 1), False)
 
-        print '\n',self.board
+        print self.board
+
         group = self.board.groups[simple_go.BLACK][0]
         self.assertEqual(len(self.board.group_territory(group)), 81)
+
+        # test teritory containing other color with an unconditionally alive group
+        '''
+           ABCDEFGHJKLMN
+          +-------------+
+        13|.............|13
+        12|.............|12
+        11|XXXXXXXXXX...|11
+        10|X.........X..|10
+         9|X.........X..| 9
+         8|X.OOOOO...X..| 8
+         7|X.O.O.OO..X..| 7
+         6|X.OOOOOO..X..| 6
+         5|X.O....O..X..| 5
+         4|X.O....O..X..| 4
+         3|X.OOOOOO..X..| 3
+         2|X.........X..| 2
+         1|XXXXXXXXXXX..| 1
+          +-------------+
+           ABCDEFGHJKLMN
+       '''
+        self.board.side = simple_go.WHITE
+        
+        for i in range(3, 8):
+            self.board.make_move((3, i), False)
+            self.board.make_move((i, 8), False)
+            self.board.make_move((8, i), False)
+            self.board.make_move((i, 3), False)
+        for i in range(4, 8):
+            self.board.make_move((i,6),False)
+        self.board.make_move((5,7),False)
+        self.board.make_move((7,7),False)
+
+        print "\nopen\n",self.board
+
+        group = self.board.groups[simple_go.BLACK][0]
+        territory = self.board.group_territory(group)
+        test = (4,7) not in territory
+        self.assertEqual(test, True) #(4,7) - D7 not in Black territory (white eye)
 
 if __name__ == '__main__':
     unittest.main()
