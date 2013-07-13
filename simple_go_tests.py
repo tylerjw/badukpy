@@ -135,8 +135,6 @@ class TestSequenceFunctions(unittest.TestCase):
             self.board.make_move((11, i), False)
             self.board.make_move((i, 1), False)
 
-        #print self.board
-
         group = self.board.groups[simple_go.BLACK][0]
         self.assertEqual(len(self.board.group_territory(group)), 81)
 
@@ -171,8 +169,6 @@ class TestSequenceFunctions(unittest.TestCase):
             self.board.make_move((i,6),False)
         self.board.make_move((5,7),False)
         self.board.make_move((7,7),False)
-
-        #print "\nopen\n",self.board
 
         group = self.board.groups[simple_go.BLACK][0]
         territory = self.board.group_territory(group)
