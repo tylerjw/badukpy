@@ -156,11 +156,13 @@ class Board:
         if self.goban[move]!=EMPTY: return False
         for pos in self.iterate_neighbour(move): # prevent suicide
             # neighboor is empty
-            if self.goban[pos]==EMPTY: return True
+            if self.goban[pos]==EMPTY:
+                return True
             # neighboor is own chain, check that chain has more that one liberty (prevent suicide)
             if self.goban[pos]==self.side and self.liberties(pos)>1: return True
             # neighboor is opponent, and they only have one liberty = capture
-            if self.goban[pos]==other_side[self.side] and self.liberties(pos)==1: return True
+            if self.goban[pos]==other_side[self.side] and self.liberties(pos)==1:
+                return True
         return False
 
     def flatten(self, groups):
@@ -226,9 +228,9 @@ class Board:
         liberties_black = []
 
         for group in self.groups[WHITE]:
-            liberties_white.add(self.group_territory(group))
+            liberties_white.append(self.group_territory(group))
         for group in self.groups[BLACK]:
-            liberties_black.add(self.group_territory(group))
+            liberties_black.append(self.group_territory(group))
 
         #add points for the captures of the other side
         self.territory_white = len(liberties_white) + self.captures[BLACK]

@@ -53,10 +53,10 @@ class TestSequenceFunctions(unittest.TestCase):
 
     def test_firstMove(self):
         pos = (3, 3)
-        self.game.make_move(pos)
+        board = self.game.make_move(pos)
         self.assertEqual(self.game.current_board.goban[pos], simple_go.BLACK)
         # TOTHINK: side doesn't change until the next move? this fails'
-        self.assertEqual(self.board.side, simple_go.WHITE)
+        self.assertEqual(board.side, simple_go.WHITE)
 
     def test_is_neighbour(self):
         pos = (3, 3)
@@ -84,6 +84,7 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEqual(self.board.liberties(pos), 4)
 
     def test_ponnuki(self):
+        self.board.side = simple_go.Board(self.size)
         pos = (2, 3)
         pos2 = (3, 2)
         pos3 = (4, 3)
@@ -96,7 +97,7 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEqual(self.board.groups[simple_go.BLACK], [[(2, 3)], [(3, 2)], [(4, 3)], [(3, 4)]])
         self.board.side = simple_go.WHITE
         # TOTHINK: this should not fail, suicide
-        self.assertEqual(self.game.legal_move((3, 3)), False)
+        self.assertEqual(self.board.legal_move((3, 3)), False) # you were referencing self.game
         self.assertEqual(self.board.liberties(pos), 4)
         self.assertEqual(self.board.liberties(pos2), 4)
         self.assertEqual(self.board.liberties(pos3), 4)
@@ -116,7 +117,7 @@ class TestSequenceFunctions(unittest.TestCase):
             self.board.make_move((11, i), False)
             self.board.make_move((i, 1), False)
 
-        print self.board
+        print '\n',self.board
         group = self.board.groups[simple_go.BLACK][0]
         self.assertEqual(len(self.board.group_territory(group)), 81)
 
