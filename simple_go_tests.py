@@ -161,7 +161,7 @@ class TestSequenceFunctions(unittest.TestCase):
          1|XXXXXXXXXXX..| 1
           +-------------+
            ABCDEFGHJKLMN
-       '''
+        '''
         self.board.side = simple_go.WHITE
         
         for i in range(3, 8):

@@ -623,7 +623,6 @@ HA[3]AB[pd][dp][dd];W[pp];B[nq];W[oq]C[ x started observation.
     print col[0].propertySearch("B", 1)
     print "\nSearch for property 'C':"
     print col[0].propertySearch("C", 1)
-    pass
 
 def selfTest2(onConsole=0):
     """ Macintosh-based SGF file test"""
@@ -642,10 +641,24 @@ def selfTest2(onConsole=0):
     print "done\n"
     print str(col)
 
+    
+def selfTest3(onConsole=0):
+    col = Collection()
+    game = GameTree()
+    col.append(game)
+    node = Node()
+    node.addProperty(node.makeProperty('B',['ab','cc']))
+    game.append(node)
+    move = Node()
+    move.addProperty(Property('W',['aa']))
+    game.append(move)
+    print col
+    
 
 if __name__ == '__main__':
-    print __doc__                               # show module's documentation string
+    selfTest3()
+    '''print __doc__                               # show module's documentation string
     selfTest1()
     import os
     if os.name == 'mac':
-        selfTest2()
+        selfTest2()'''
