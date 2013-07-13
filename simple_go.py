@@ -21,6 +21,7 @@ import re, string, time, random, sys
 #from types import * ??? what is this ??? commented out to see if it'll break
 from math import sqrt
 from copy import deepcopy
+from sgflib1.0/sgflib import Collection,GameTree,Node
 
 EMPTY = "."
 BLACK = "X"
@@ -29,6 +30,7 @@ WHITE = "O"
 colors = [BLACK, WHITE]
 
 other_side = {BLACK: WHITE, WHITE: BLACK}
+sgf_side = {BLACK: 'B', WHITE: 'W'}
 
 PASS_MOVE = (-1, -1)
 
@@ -50,6 +52,18 @@ def string_as_move(m, size):
     x = string.find(x_coords_string, m[0]) + 1
     y = int(m[1:])
     return x,y
+
+def move_to_sgf(m):
+    if move == PASS_MOVE:
+        return ''
+    sgf = string.ascii_lowercase[m-1] + string.ascii_lowercase[m-1]
+    return sgf
+
+def sgf_to_move(sgf)
+    if sgf == '' or sgf == 'tt':
+        return PASS_MOVE
+    move = (string.ascii_lowercase.index(sgf[0]), string.ascii_lowercase.index(sgf[1]))
+    return move
 
 class Board:
     def __init__(self, size):
@@ -182,8 +196,6 @@ class Board:
         """
         result = []
 
-        opposite_side = other_side[self.goban[group[0]]]
-
         xs = [x[0] for x in group]
         ys = [y[1] for y in group]
 
@@ -192,53 +204,29 @@ class Board:
         upMost = max(ys)
         downMost = min(ys)
 
-        maxes = (leftMost, rightMost, upMost, downMost)
-
         for i in range(leftMost, rightMost):
-            enemy_stones_y = [ePos for ePos in [(i, x) for x in range(downMost, upMost)] if self.goban[ePos] == opposite_side]
             for k in range(downMost, upMost):
                 thisPos = (i, k)
                 if self.goban[thisPos] != EMPTY:
                     continue
-
-                enemy_stones_x = [ePos for ePos in [(x, k) for x in range(leftMost, rightMost)] if self.goban[ePos] == opposite_side]
-                enemy_stones = enemy_stones_x + enemy_stones_y
-                thisPos_in_enemy_group = True
-
-                if enemy_stones != []:
-                    e_xs = [x[0] for x in enemy_stones]
-                    e_ys = [y[1] for y in enemy_stones]
-                    e_maxes = (min(e_xs), max(e_xs), max(e_ys), min(e_ys))
-                    thisPos_in_enemy_group = self.check_relative_stone_position(thisPos, enemy_stones, e_maxes)
-                else:
-                    thisPos_in_enemy_group = False
-
-                thisPos_in_group = self.check_relative_stone_position(thisPos, group, maxes)
-
-                if thisPos_in_group and not thisPos_in_enemy_group:
+                inside_x_right = False
+                inside_x_left = False
+                inside_y_up = False
+                inside_y_down = False
+                for stone in group:
+                    if stone[0] == i:
+                        if stone[1] > k:
+                            inside_y_up = True
+                        if stone[1] < k:
+                            inside_y_down = True
+                    if stone[1] == k:
+                        if stone[0] > i:
+                            inside_x_left = True
+                        if stone[0] < i:
+                            inside_x_right = True
+                if inside_x_right and inside_x_left and inside_y_up and inside_y_down:
                     result.append(thisPos)
-
         return result
-
-    def check_relative_stone_position(self, pos, group, maxes):
-            inside_x_right = False
-            inside_x_left = False
-            inside_y_up = False
-            inside_y_down = False
-
-            for stone in group:
-                if stone[0] == pos[0]:
-                    if stone[1] > pos[1] or maxes[2] == self.size:
-                        inside_y_up = True
-                    if stone[1] < pos[1] or maxes[3] == 1:
-                        inside_y_down = True
-                if stone[1] == pos[1]:
-                    if stone[0] < pos[0] or maxes[0] == 1:
-                        inside_x_left = True
-                    if stone[0] > pos[0] or maxes[1] == self.size:
-                        inside_x_right = True
-
-            return inside_x_right and inside_x_left and inside_y_up and inside_y_down
 
     def count_territory(self):
         """
@@ -583,6 +571,7 @@ class Game:
         """
         self.size = size
         self.current_board = Board(size)
+        self.game_tree = GameTree()
         #past boards and moves
         self.board_history = []
         self.move_history = []
@@ -623,6 +612,11 @@ class Game:
               Then make move and update history.
         """
         if not self.legal_move(move): return None
+        #update game_tree
+        node = Node()
+        node.addProperty(node.makeProperty(sgf_side[self.current_board.side],
+                                           [move_to_sgf(move)]))
+        self.game_tree.append(node)
         new_board, board_key = self.make_move_in_new_board(move)
         self.move_history.append(move)
         self.board_history.append(self.current_board)
@@ -641,6 +635,15 @@ class Game:
         if last_move!=PASS_MOVE:
             del self.position_seen[self.current_board.key()]
         self.current_board = self.board_history.pop()
+
+        #update game tree
+        last_node = self.game.pop()
+        var = GameTree()
+        var.append(last_node)
+        self.game_tree.variations.append(var)
+        var2 = GameTree()
+        self.game_tree.variations.append(var2)
+        self.game_tree = var2
         return self.current_board
 
     def score(self):
@@ -669,6 +672,10 @@ class Game:
         """generate move using random move generator
         """
         return self.select_random_move()
+
+    def __str__(self):
+        ''' print sfg string '''
+        return str(self.game_tree)
 
 
 def main():

@@ -647,12 +647,22 @@ def selfTest3(onConsole=0):
     game = GameTree()
     col.append(game)
     node = Node()
-    node.addProperty(node.makeProperty('B',['ab','cc']))
+    node.addProperty(node.makeProperty('B',['ab']))
     game.append(node)
     move = Node()
     move.addProperty(Property('W',['aa']))
     game.append(move)
-    print col
+    game2 = GameTree()
+    game.variations.append(game2)
+    move = Node()
+    move.addProperty(Property('B',['ac']))
+    game2.append(move)
+    game3 = GameTree()
+    game.variations.append(game3)
+    move = Node()
+    move.addProperty(Property('B',['ad']))
+    game3.append(move)
+    print game
     
 
 if __name__ == '__main__':
