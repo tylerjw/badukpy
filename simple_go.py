@@ -20,7 +20,7 @@
 import re, string, time, random, sys
 from math import sqrt
 from copy import deepcopy
-from sgflib1.0/sgflib import Collection,GameTree,Node
+from sgflib import Collection,GameTree,Node
 
 EMPTY = "."
 BLACK = "X"
@@ -53,12 +53,12 @@ def string_as_move(m, size):
     return x,y
 
 def move_to_sgf(m):
-    if move == PASS_MOVE:
+    if m == PASS_MOVE:
         return ''
-    sgf = string.ascii_lowercase[m-1] + string.ascii_lowercase[m-1]
+    sgf = string.ascii_lowercase[m[0]-1] + string.ascii_lowercase[m[1]-1]
     return sgf
 
-def sgf_to_move(sgf)
+def sgf_to_move(sgf):
     if sgf == '' or sgf == 'tt':
         return PASS_MOVE
     move = (string.ascii_lowercase.index(sgf[0]), string.ascii_lowercase.index(sgf[1]))
@@ -195,6 +195,8 @@ class Board:
         """
         result = []
 
+        opposite_side = other_side[self.goban[group[0]]]
+
         xs = [x[0] for x in group]
         ys = [y[1] for y in group]
 
@@ -208,24 +210,36 @@ class Board:
                 thisPos = (i, k)
                 if self.goban[thisPos] != EMPTY:
                     continue
-                inside_x_right = False
-                inside_x_left = False
-                inside_y_up = False
-                inside_y_down = False
-                for stone in group:
-                    if stone[0] == i:
-                        if stone[1] > k:
-                            inside_y_up = True
-                        if stone[1] < k:
-                            inside_y_down = True
-                    if stone[1] == k:
-                        if stone[0] > i:
-                            inside_x_left = True
-                        if stone[0] < i:
-                            inside_x_right = True
-                if inside_x_right and inside_x_left and inside_y_up and inside_y_down:
+                enemy_stones_x = [ePos for ePos in [(x, k) for x in range(leftMost, rightMost)] if self.goban[ePos] == opposite_side]
+                enemy_stones_y = [ePos for ePos in [(i, x) for x in range(downMost, upMost)] if self.goban[ePos] == opposite_side]
+                enemy_stones = enemy_stones_x + enemy_stones_y
+
+                thisPos_in_group = self.check_relative_stone_position(thisPos, group)
+                thisPos_in_enemy_group = self.check_relative_stone_position(thisPos, enemy_stones)
+
+                if thisPos_in_group and not thisPos_in_enemy_group:
                     result.append(thisPos)
+
         return result
+
+    def check_relative_stone_position(self, pos, group):
+            inside_x_right = False
+            inside_x_left = False
+            inside_y_up = False
+            inside_y_down = False
+
+            for stone in group:
+                if stone[0] == pos[0]:
+                    if stone[1] > pos[1]:
+                        inside_y_up = True
+                    if stone[1] < pos[1]:
+                        inside_y_down = True
+                if stone[1] == pos[1]:
+                    if stone[0] > pos[0]:
+                        inside_x_left = True
+                    if stone[0] < pos[0]:
+                        inside_x_right = True
+            return inside_x_right and inside_x_left and inside_y_up and inside_y_down
 
     def count_territory(self):
         """
@@ -673,7 +687,6 @@ class Game:
         return self.select_random_move()
 
     def __str__(self):
-        ''' print sfg string '''
         return str(self.game_tree)
 
 
@@ -722,6 +735,8 @@ def life_test():
     print "Score"
     print "Black: ",score[0]
     print "White: ",score[1]
+    
+    print '\nGame SGF:\n',g
 
 if __name__=="__main__":
     life_test()
