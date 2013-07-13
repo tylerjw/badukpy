@@ -625,7 +625,7 @@ class Game:
         self.game_tree = GameTree()
         self.current_node = Node([Property('FF',['4']), #file format
                           Property('SZ',[str(self.size)]),#board size
-                          Property('C',['Created with BadukPy program'])]) #comment
+                          Property('AP',['BadukPy'])]) #comment
         #self.current_node.addProperty(
         self.game_tree.append(self.current_node)
         #past boards and moves
