@@ -20,7 +20,7 @@
 import re, string, time, random, sys
 from math import sqrt
 from copy import deepcopy
-from sgflib import Collection,GameTree,Node
+from sgflib import Collection,GameTree,Node,SGFParser,Property
 
 EMPTY = "."
 BLACK = "X"
@@ -59,10 +59,33 @@ def move_to_sgf(m):
     return sgf
 
 def sgf_to_move(sgf):
-    if sgf == '' or sgf == 'tt':
+    if sgf == '':
         return PASS_MOVE
     move = (string.ascii_lowercase.index(sgf[0]), string.ascii_lowercase.index(sgf[1]))
     return move
+
+def game_from_sgf(sgfdata, game_number=0):
+    col = SGFParser(sgfdata).parse()
+    cur = col.cursor(game_number)
+    size = int(cur.node['SZ'][0])
+    game = Game(size)
+
+    #build moves list -- if it isn't in order in the file, bad things happen
+    moves = []
+    while 1:
+        if cur.node.has_key('B'):
+            moves.append(sgf_to_move(cur.node['B'][0]))
+        elif cur.node.has_key('W'):
+            moves.append(sgf_to_move(cur.node['W'][0]))
+        if cur.atEnd: break
+        cur.next()
+
+    #move the game along
+    for move in moves:
+        game.make_move(move)
+
+    return game
+    
 
 class Board:
     def __init__(self, size):
@@ -195,8 +218,6 @@ class Board:
         """
         result = []
 
-        opposite_side = other_side[self.goban[group[0]]]
-
         xs = [x[0] for x in group]
         ys = [y[1] for y in group]
 
@@ -210,36 +231,24 @@ class Board:
                 thisPos = (i, k)
                 if self.goban[thisPos] != EMPTY:
                     continue
-                enemy_stones_x = [ePos for ePos in [(x, k) for x in range(leftMost, rightMost)] if self.goban[ePos] == opposite_side]
-                enemy_stones_y = [ePos for ePos in [(i, x) for x in range(downMost, upMost)] if self.goban[ePos] == opposite_side]
-                enemy_stones = enemy_stones_x + enemy_stones_y
-
-                thisPos_in_group = self.check_relative_stone_position(thisPos, group)
-                thisPos_in_enemy_group = self.check_relative_stone_position(thisPos, enemy_stones)
-
-                if thisPos_in_group and not thisPos_in_enemy_group:
+                inside_x_right = False
+                inside_x_left = False
+                inside_y_up = False
+                inside_y_down = False
+                for stone in group:
+                    if stone[0] == i:
+                        if stone[1] > k:
+                            inside_y_up = True
+                        if stone[1] < k:
+                            inside_y_down = True
+                    if stone[1] == k:
+                        if stone[0] > i:
+                            inside_x_left = True
+                        if stone[0] < i:
+                            inside_x_right = True
+                if inside_x_right and inside_x_left and inside_y_up and inside_y_down:
                     result.append(thisPos)
-
         return result
-
-    def check_relative_stone_position(self, pos, group):
-            inside_x_right = False
-            inside_x_left = False
-            inside_y_up = False
-            inside_y_down = False
-
-            for stone in group:
-                if stone[0] == pos[0]:
-                    if stone[1] > pos[1]:
-                        inside_y_up = True
-                    if stone[1] < pos[1]:
-                        inside_y_down = True
-                if stone[1] == pos[1]:
-                    if stone[0] > pos[0]:
-                        inside_x_left = True
-                    if stone[0] < pos[0]:
-                        inside_x_right = True
-            return inside_x_right and inside_x_left and inside_y_up and inside_y_down
 
     def count_territory(self):
         """
@@ -585,6 +594,11 @@ class Game:
         self.size = size
         self.current_board = Board(size)
         self.game_tree = GameTree()
+        self.current_node = Node([Property('FF',['4']), #file format
+                          Property('SZ',[str(self.size)]),#board size
+                          Property('C',['Created with BadukPy program'])]) #comment
+        #self.current_node.addProperty(
+        self.game_tree.append(self.current_node)
         #past boards and moves
         self.board_history = []
         self.move_history = []
@@ -626,10 +640,11 @@ class Game:
         """
         if not self.legal_move(move): return None
         #update game_tree
-        node = Node()
-        node.addProperty(node.makeProperty(sgf_side[self.current_board.side],
+        
+        self.current_node.addProperty(self.current_node.makeProperty(sgf_side[self.current_board.side],
                                            [move_to_sgf(move)]))
-        self.game_tree.append(node)
+        self.game_tree.append(self.current_node)
+        self.current_node = Node()
         new_board, board_key = self.make_move_in_new_board(move)
         self.move_history.append(move)
         self.board_history.append(self.current_board)
@@ -687,6 +702,7 @@ class Game:
         return self.select_random_move()
 
     def __str__(self):
+        ''' print sfg string '''
         return str(self.game_tree)
 
 
@@ -735,9 +751,18 @@ def life_test():
     print "Score"
     print "Black: ",score[0]
     print "White: ",score[1]
-    
-    print '\nGame SGF:\n',g
+
+def sgf_test():
+    sgffile = open('ff4_ex.sgf', 'r')
+    sgfdata = sgffile.read()
+    sgffile.close()
+    g = game_from_sgf(sgfdata, 0)
+    print g.current_board
+
+    savef = open('save.sgf', 'w')
+    savef.write(str(g))
+    savef.close()
 
 if __name__=="__main__":
-    life_test()
+    sgf_test()
 
