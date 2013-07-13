@@ -55,7 +55,6 @@ class TestSequenceFunctions(unittest.TestCase):
         pos = (3, 3)
         board = self.game.make_move(pos)
         self.assertEqual(self.game.current_board.goban[pos], simple_go.BLACK)
-        # TOTHINK: side doesn't change until the next move? this fails'
         self.assertEqual(board.side, simple_go.WHITE)
 
     def test_is_neighbour(self):
@@ -96,8 +95,7 @@ class TestSequenceFunctions(unittest.TestCase):
         self.board.make_move(pos4, False)
         self.assertEqual(self.board.groups[simple_go.BLACK], [[(2, 3)], [(3, 2)], [(4, 3)], [(3, 4)]])
         self.board.side = simple_go.WHITE
-        # TOTHINK: this should not fail, suicide
-        self.assertEqual(self.board.legal_move((3, 3)), False) # you were referencing self.game
+        self.assertEqual(self.board.legal_move((3, 3)), False)
         self.assertEqual(self.board.liberties(pos), 4)
         self.assertEqual(self.board.liberties(pos2), 4)
         self.assertEqual(self.board.liberties(pos3), 4)
@@ -137,7 +135,7 @@ class TestSequenceFunctions(unittest.TestCase):
             self.board.make_move((11, i), False)
             self.board.make_move((i, 1), False)
 
-        print self.board
+        #print self.board
 
         group = self.board.groups[simple_go.BLACK][0]
         self.assertEqual(len(self.board.group_territory(group)), 81)
@@ -163,7 +161,7 @@ class TestSequenceFunctions(unittest.TestCase):
            ABCDEFGHJKLMN
         '''
         self.board.side = simple_go.WHITE
-        
+
         for i in range(3, 8):
             self.board.make_move((3, i), False)
             self.board.make_move((i, 8), False)
@@ -174,12 +172,25 @@ class TestSequenceFunctions(unittest.TestCase):
         self.board.make_move((5,7),False)
         self.board.make_move((7,7),False)
 
-        print "\nopen\n",self.board
+        #print "\nopen\n",self.board
 
         group = self.board.groups[simple_go.BLACK][0]
         territory = self.board.group_territory(group)
         test = (4,7) not in territory
         self.assertEqual(test, True) #(4,7) - D7 not in Black territory (white eye)
+
+    def test_group_corner(self):
+        for i in range(0, 6):
+            self.board.make_move((5, i), False)
+            self.board.make_move((i, 5), False)
+        print self.board
+        group = self.board.groups[simple_go.BLACK][0]
+        self.assertEqual(len(self.board.group_territory(group)), 16)
+
+        for i in range(0, 5):
+            self.board.make_move((3, i), False)
+        group = self.board.groups[simple_go.BLACK][0]
+        self.assertEqual(len(self.board.group_territory(group)), 12)
 
 if __name__ == '__main__':
     unittest.main()
