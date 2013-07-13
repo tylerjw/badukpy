@@ -71,15 +71,29 @@ def game_from_sgf(sgfdata, game_number=0):
     game = Game(size)
 
     #build moves list -- if it isn't in order in the file, bad things happen
+    add_black = []
+    add_white = []
     moves = []
     while 1:
-        if cur.node.has_key('B'):
+        if cur.node.has_key('AB'):
+            add_black += map(sgf_to_move, cur.node['AB'])
+        elif cur.node.has_key('AW'):
+            add_white += map(sfg_to_move, cur.node['AW'])
+        elif cur.node.has_key('B'):
             moves.append(sgf_to_move(cur.node['B'][0]))
         elif cur.node.has_key('W'):
             moves.append(sgf_to_move(cur.node['W'][0]))
         if cur.atEnd: break
         cur.next()
 
+    #add black and white (setup positions)
+    for move in add_black:
+        game.current_board.make_move(move,False)
+    for move in add_white:
+        game.current_board.side = WHITE
+        game.current_board.make_move(move,False)
+        game.current_board.side = BLACK
+        
     #move the game along
     for move in moves:
         game.make_move(move)
@@ -768,7 +782,7 @@ def life_test():
     print "White: ",score[1]
 
 def sgf_test():
-    sgffile = open('ff4_ex.sgf', 'r')
+    sgffile = open('sgf/qjzm1-103.sgf', 'r')
     sgfdata = sgffile.read()
     sgffile.close()
     g = game_from_sgf(sgfdata, 0)
