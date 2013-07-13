@@ -192,24 +192,35 @@ class Board:
         upMost = max(ys)
         downMost = min(ys)
 
+        maxes = (leftMost, rightMost, upMost, downMost)
+
         for i in range(leftMost, rightMost):
+            enemy_stones_y = [ePos for ePos in [(i, x) for x in range(downMost, upMost)] if self.goban[ePos] == opposite_side]
             for k in range(downMost, upMost):
                 thisPos = (i, k)
                 if self.goban[thisPos] != EMPTY:
                     continue
-                enemy_stones_x = [ePos for ePos in [(x, k) for x in range(leftMost, rightMost)] if self.goban[ePos] == opposite_side]
-                enemy_stones_y = [ePos for ePos in [(i, x) for x in range(downMost, upMost)] if self.goban[ePos] == opposite_side]
-                enemy_stones = enemy_stones_x + enemy_stones_y
 
-                thisPos_in_group = self.check_relative_stone_position(thisPos, group)
-                thisPos_in_enemy_group = self.check_relative_stone_position(thisPos, enemy_stones)
+                enemy_stones_x = [ePos for ePos in [(x, k) for x in range(leftMost, rightMost)] if self.goban[ePos] == opposite_side]
+                enemy_stones = enemy_stones_x + enemy_stones_y
+                thisPos_in_enemy_group = True
+
+                if enemy_stones != []:
+                    e_xs = [x[0] for x in enemy_stones]
+                    e_ys = [y[1] for y in enemy_stones]
+                    e_maxes = (min(e_xs), max(e_xs), max(e_ys), min(e_ys))
+                    thisPos_in_enemy_group = self.check_relative_stone_position(thisPos, enemy_stones, e_maxes)
+                else:
+                    thisPos_in_enemy_group = False
+
+                thisPos_in_group = self.check_relative_stone_position(thisPos, group, maxes)
 
                 if thisPos_in_group and not thisPos_in_enemy_group:
                     result.append(thisPos)
 
         return result
 
-    def check_relative_stone_position(self, pos, group):
+    def check_relative_stone_position(self, pos, group, maxes):
             inside_x_right = False
             inside_x_left = False
             inside_y_up = False
@@ -217,15 +228,16 @@ class Board:
 
             for stone in group:
                 if stone[0] == pos[0]:
-                    if stone[1] > pos[1]:
+                    if stone[1] > pos[1] or maxes[2] == self.size:
                         inside_y_up = True
-                    if stone[1] < pos[1]:
+                    if stone[1] < pos[1] or maxes[3] == 1:
                         inside_y_down = True
                 if stone[1] == pos[1]:
-                    if stone[0] > pos[0]:
+                    if stone[0] < pos[0] or maxes[0] == 1:
                         inside_x_left = True
-                    if stone[0] < pos[0]:
+                    if stone[0] > pos[0] or maxes[1] == self.size:
                         inside_x_right = True
+
             return inside_x_right and inside_x_left and inside_y_up and inside_y_down
 
     def count_territory(self):
