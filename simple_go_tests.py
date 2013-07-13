@@ -183,7 +183,7 @@ class TestSequenceFunctions(unittest.TestCase):
         for i in range(0, 6):
             self.board.make_move((5, i), False)
             self.board.make_move((i, 5), False)
-        print self.board
+        #print self.board
         group = self.board.groups[simple_go.BLACK][0]
         self.assertEqual(len(self.board.group_territory(group)), 16)
 
@@ -191,6 +191,48 @@ class TestSequenceFunctions(unittest.TestCase):
             self.board.make_move((3, i), False)
         group = self.board.groups[simple_go.BLACK][0]
         self.assertEqual(len(self.board.group_territory(group)), 12)
+
+    def test_bent_group(self):
+        for i in range(0, 6):
+            self.board.make_move((i, 5), False)
+        for i in range(0, 3):
+            self.board.make_move((3, i), False)
+        for i in range(3, 6):
+            self.board.make_move((i, 3), False)
+            self.board.make_move((6, i), False)
+
+        self.board.side = simple_go.WHITE
+        for i in range(4, 8):
+            self.board.make_move((i, 2), False)
+        self.board.make_move((4, 1), False)
+        self.board.make_move((7, 1), False)
+
+        """
+           ABCDEFGHJKLMN
+          +-------------+
+        13|.............|13
+        12|.............|12
+        11|.............|11
+        10|.............|10
+         9|.............| 9
+         8|.............| 8
+         7|.............| 7
+         6|.............| 6
+         5|XXXXXX.......| 5
+         4|.....X.......| 4
+         3|..XXXX.......| 3
+         2|..XOOOO......| 2
+         1|..XO..O......| 1
+          +-------------+
+           ABCDEFGHJKLMN
+
+        """
+
+        black_group = self.board.groups[simple_go.BLACK][0]
+        white_group = self.board.groups[simple_go.WHITE][0]
+
+        self.assertEqual(len(self.board.group_territory(black_group)), 11)
+        self.assertEqual(len(self.board.group_territory(white_group)), 2)
 
 if __name__ == '__main__':
     unittest.main()
