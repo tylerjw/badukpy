@@ -630,7 +630,6 @@ class Game:
         self.game_tree.append(self.current_node)
         #past boards and moves
         self.board_history = []
-        self.move_history = []
         #for super-ko detection
         self.position_seen = {}
         self.position_seen[self.current_board.key()] = True
@@ -675,7 +674,6 @@ class Game:
         self.game_tree.append(self.current_node)
         self.current_node = Node()
         new_board, board_key = self.make_move_in_new_board(move)
-        self.move_history.append(move)
         self.board_history.append(self.current_board)
         if move!=PASS_MOVE:
             self.position_seen[board_key] = True
@@ -687,8 +685,7 @@ class Game:
               or return None if at beginning.
               Update repetition history and make previous position current.
         """
-        if not self.move_history: return None
-        last_move = self.move_history.pop()
+        if self.board_history == []: return None
         if last_move!=PASS_MOVE:
             del self.position_seen[self.current_board.key()]
         self.current_board = self.board_history.pop()
@@ -734,6 +731,33 @@ class Game:
         ''' print sfg string '''
         return str(self.game_tree)
 
+    def move_history(self, distance):
+        ''' returns a move in the history of the current game
+            uses game_tree
+            distance is a positive number,
+            1 last move
+            2 move before last
+            ...
+        '''
+        if distance < 1:
+            #bad input
+            return None
+        cur = self.gametree.cursor()
+        #transverse to the end
+        while not cur.atEnd:
+            cur.next()
+
+        for i in range(distance):
+            cur.previous()
+
+        move = None
+        if cur.node.has_key('W'):
+            move = sgf_to_move(cur.node['W'][0])
+        elif cur.node.has_key('B'):
+            move = sgf_to_move(cur.node['W'][0])
+
+        return move
+
 
 def main():
     size = 5
@@ -744,9 +768,9 @@ def main():
         print move_as_string(move, g.size)
         print g.current_board
         #if last 2 moves are pass moves: exit loop
-        if len(g.move_history)>=2 and \
-           g.move_history[-1]==PASS_MOVE and \
-           g.move_history[-2]==PASS_MOVE:
+        if len(g.board_history)>=2 and \
+           g.move_history(1)==PASS_MOVE and \
+           g.move_history(2)==PASS_MOVE:
             break
 
 def grouping_test():
@@ -794,4 +818,3 @@ def sgf_test():
 
 if __name__=="__main__":
     sgf_test()
-
