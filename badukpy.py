@@ -92,7 +92,7 @@ class Window(Frame):
 
 
 if __name__ == '__main__':
-    size = 13
+    size = 9
     g = Game(size)
     Window(g,600).mainloop()
 

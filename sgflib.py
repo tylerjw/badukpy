@@ -595,10 +595,16 @@ class Cursor:
             self.next()
 
     def add_white(self, moves):
+        self.reset()
         self.node.addProperty(Property('AW',moves))
+        while not self.atEnd:
+            self.next()
         
     def add_black(self, moves):
+        self.reset()
         self.node.addProperty(Property('AB',moves))
+        while not self.atEnd:
+            self.next()
 
     def undo_moves(self, nmoves=1):
         ''' undo a move, nmoves is number of moves to back track '''
