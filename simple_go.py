@@ -282,9 +282,7 @@ class Board:
                         inside_x_left = True
                     if stone[0] > pos[0] or maxes[1] == self.size:
                         inside_x_right = True
-
             return inside_x_right and inside_x_left and inside_y_up and inside_y_down
-
 
     def count_territory(self):
         """
@@ -299,14 +297,17 @@ class Board:
         liberties_white = []
         liberties_black = []
 
-        for group in self.groups[WHITE]:
-            liberties_white.append(self.group_territory(group))
-        for group in self.groups[BLACK]:
-            liberties_black.append(self.group_territory(group))
+        if self.groups[WHITE]:
+            for group in self.groups[WHITE]:
+                liberties_white += self.group_territory(group)
+            self.territory_white = len(set(liberties_white))
+        if self.groups[BLACK]:
+            for group in self.groups[BLACK]:
+                liberties_black += self.group_territory(group)
+            self.territory_black = len(set(liberties_black))
 
-        #add points for the captures of the other side
-        self.territory_white = len(liberties_white) + self.captures[BLACK]
-        self.territory_black = len(liberties_black) + self.captures[WHITE]
+        self.territory_white += self.captures[BLACK]
+        self.territory_black += self.captures[WHITE]
 
     def liberties(self, pos):
         """Count liberties for group at given position.
