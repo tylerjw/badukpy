@@ -303,7 +303,6 @@ class Collection(List):
         """ Returns a 'Cursor' object for navigation of the given 'GameTree'."""
         return Cursor(self[gamenum])
 
-
 class GameTree(List):
     """
     An SGF game tree: a game or variation. Instance attributes:
@@ -334,6 +333,24 @@ class GameTree(List):
         else:
             return ""                           # empty GameTree illegal; "()" illegal
 
+    def appendNode(self, node):
+        self.append(node)
+        
+    def undo_moves(self, nmoves=1):
+        nodes = []
+        for i in range(nmoves):
+            nodes += [self.pop()]
+        new_tree = GameTree([self.pop()])
+        if len(self.variations) > 0:
+            self.variations.append(self.variations[0])
+            self.variations[0] = new_tree
+        else:
+            self.variations += [new_tree]
+            
+        self.variations.append(GameTree(nodes))
+        
+        return new_tree
+        
     def mainline(self):
         """ Returns the main line of the game (variation A) as a 'GameTree'."""
         if self.variations:
@@ -372,7 +389,6 @@ class GameTree(List):
                 if not getall and matches:
                     break
         return GameTree(matches)
-
 
 class Node(Dictionary):
     """
@@ -572,6 +588,21 @@ class Cursor:
         self.atEnd = not self.gametree.variations and (self.index + 1 == len(self.gametree))
         self.atStart = not self.stack and (self.index == 0)
 
+    def make_move(self, move, side):
+        self.gametree.appendNode(Node([Property(side,[move])]))
+        #keep move pointer to the end if not already there
+        while not self.atEnd:
+            self.next()
+
+    def add_white(self, moves):
+        self.node.addProperty(Property('AW',moves))
+        
+    def add_black(self, moves):
+        self.node.addProperty(Property('AB',moves))
+
+    def undo_moves(self, nmoves=1):
+        ''' undo a move, nmoves is number of moves to back track '''
+        self.gametree = self.gametree.undo_moves(nmoves)
 
 reCharsToEscape = re.compile(r'\]|\\')          # characters that need to be \escaped
 
@@ -664,9 +695,23 @@ def selfTest3(onConsole=0):
     game3.append(move)
     print game
 
+def selfTest4():
+    moves = ['aa','bb','cc','dd','ee','ff']
+    side = 'B'
+    other_side = {'B':'W','W':'B'}
+    cur = Cursor(GameTree([Node([Property('SZ',['19'])])]))
+    cur.add_black(['ab','ac','ad','ae','af'])
+    cur.add_white(['bc','bd','be'])
+    for m in moves:
+        cur.make_move(m,side)
+        side = other_side[side]
+
+    cur.undo_moves()
+    moves = ['gg','hh','ii','jj','kk','ll']
+    for m in moves:
+        cur.make_move(m,side)
+        side = other_side[side]
+    print cur.game
+
 if __name__ == '__main__':
-    print __doc__                               # show module's documentation string
-    selfTest1()
-    import os
-    if os.name == 'mac':
-        selfTest2()
+    selfTest4()

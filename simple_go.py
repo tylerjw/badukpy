@@ -87,19 +87,16 @@ def game_from_sgf(sgfdata, game_number=0):
         cur.next()
 
     #add black and white (setup positions)
-    for move in add_black:
-        game.current_board.make_move(move,False)
-    for move in add_white:
-        game.current_board.side = WHITE
-        game.current_board.make_move(move,False)
-        game.current_board.side = BLACK
+    if add_black:
+        game.add_black(add_black)
+    if add_white:
+        game.add_white(add_white)
 
     #move the game along
     for move in moves:
         game.make_move(move)
 
     return game
-
 
 class Board:
     def __init__(self, size):
@@ -633,11 +630,10 @@ class Game:
         self.size = size
         self.current_board = Board(size)
         self.game_tree = GameTree()
-        self.current_node = Node([Property('FF',['4']), #file format
+        self.game_tree.append(Node([Property('FF',['4']), #file format
                           Property('SZ',[str(self.size)]),#board size
-                          Property('AP',['BadukPy'])]) #comment
-        #self.current_node.addProperty(
-        self.game_tree.append(self.current_node)
+                          Property('AP',['BadukPy'])])) #comment
+        self.cur = self.game_tree.cursor()
         #past boards and moves
         self.board_history = []
         #for super-ko detection
@@ -646,6 +642,16 @@ class Game:
 
         #TODO: handle komi?
         self.komi = 6.5
+
+    def add_white(self, moves):
+        for move in moves:
+            self.current_board.goban[move] = WHITE
+        self.cur.add_white(map(move_to_sgf,moves))
+
+    def add_black(self, moves):
+        for move in moves:
+            self.current_board.goban[move] = BLACK
+        self.cur.add_black(map(move_to_sgf,moves))
 
     def make_move_in_new_board(self, move):
         """This is utility method.
@@ -678,11 +684,8 @@ class Game:
         """
         if not self.legal_move(move): return None
         #update game_tree
+        self.cur.make_move(move_to_sgf(move),sgf_side[self.current_board.side])
 
-        self.current_node.addProperty(self.current_node.makeProperty(sgf_side[self.current_board.side],
-                                           [move_to_sgf(move)]))
-        self.game_tree.append(self.current_node)
-        self.current_node = Node()
         new_board, board_key = self.make_move_in_new_board(move)
         self.board_history.append(self.current_board)
         if move!=PASS_MOVE:
@@ -701,13 +704,7 @@ class Game:
         self.current_board = self.board_history.pop()
 
         #update game tree
-        last_node = self.game.pop()
-        var = GameTree()
-        var.append(last_node)
-        self.game_tree.variations.append(var)
-        var2 = GameTree()
-        self.game_tree.variations.append(var2)
-        self.game_tree = var2
+        self.cur.undo_moves()
         return self.current_board
 
     def score(self):
@@ -820,7 +817,7 @@ def sgf_test():
     sgfdata = sgffile.read()
     sgffile.close()
     g = game_from_sgf(sgfdata, 0)
-    print g.current_board
+    print g.game_tree
 
     savef = open('save.sgf', 'w')
     savef.write(str(g))
