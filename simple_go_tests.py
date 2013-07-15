@@ -230,6 +230,40 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEqual(len(self.board.group_territory(black_group)), 11)
         self.assertEqual(len(self.board.group_territory(white_group)), 2)
 
+    def test_nested_group(self):
+        for i in range(0,6):
+            self.board.make_move((i, 5), False)
+            self.board.make_move((5, i), False)
+        for i in range(0, 3):
+            self.board.make_move((i, 2), False)
+            self.board.make_move((2, i), False)
+
+        """
+           ABCDEFGHJKLMN
+          +-------------+
+        13|.............|13
+        12|.............|12
+        11|.............|11
+        10|.............|10
+         9|.............| 9
+         8|.............| 8
+         7|.............| 7
+         6|.............| 6
+         5|XXXXX........| 5
+         4|....X........| 4
+         3|....X........| 3
+         2|XX..X........| 2
+         1|.X..X........| 1
+          +-------------+
+           ABCDEFGHJKLMN
+        """
+
+        first_group = self.board.groups[simple_go.BLACK][0]
+        second_group = self.board.groups[simple_go.BLACK][1]
+
+        self.assertEqual(len(self.board.group_territory(first_group)), 12)
+        self.assertEqual(len(self.board.group_territory(second_group)), 1)
+
 if __name__ == '__main__':
     unittest.main()
 
