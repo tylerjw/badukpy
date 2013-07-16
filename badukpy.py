@@ -4,7 +4,7 @@ baduk_gui
 gui for badukpy game
 '''
 
-from Tkinter import Frame, Canvas
+from Tkinter import Frame,Canvas,Menubutton,Menu
 from simple_go import Game,BLACK,WHITE,EMPTY,PASS_MOVE,move_as_string
 from copy import deepcopy
 
@@ -13,8 +13,32 @@ draw_color = {BLACK:'black', WHITE:'white'}
 class Window(Frame):
     def __init__(self,game,canvas_hw,master=None):
         Frame.__init__(self,master) #call superclass constructor
-        self.pack(padx=15,pady=15)
+        self.master.title("BadukPy Game")
+        self.pack(expand=True,fill='both')
 
+        self.menubar = Menu(self)
+
+        menu = Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="File", menu=menu)
+        menu.add_command(label="Load SGF File")
+        menu.add_command(label="Save SGF File")
+        menu.add_command(label="Quit",command=self.quit_window)
+        
+        menu = Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="Play", menu=menu)
+        menu.add_command(label="New Game",command=self.new_game)
+        menu.add_command(label="Undo Move")
+
+        menu = Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="Window", menu=menu)
+        menu.add_command(label="Game Tree Viewer")
+
+        menu = Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="Help", menu=menu)
+        menu.add_command(label="Help",command=self.help_go)
+        menu.add_command(label="About",command=self.about)
+        self.master.config(menu=self.menubar)
+        
         self.game = game
         self.size = self.game.size
         self.canvas_hw = canvas_hw
@@ -24,8 +48,8 @@ class Window(Frame):
             self.line_xy.append(self.line_xy[i]+self.cir_d)
 
         self.stones = {}
-
-        self.canvas = Canvas(self,width=self.canvas_hw,height=self.canvas_hw)
+        self.frame = Frame(padx=15,pady=15)
+        self.canvas = Canvas(self.frame,width=self.canvas_hw,height=self.canvas_hw)
         #draw lines
         for i in range(self.size):
             #vertical
@@ -34,10 +58,23 @@ class Window(Frame):
             self.canvas.create_line(self.cir_d,self.line_xy[i],self.canvas_hw-self.cir_d,self.line_xy[i],width=3)
 
         self.canvas.grid(row=0,column=0,sticky='w')
+        self.frame.pack()
 
         move = self.game.generate_move()
         self.make_move(move)
         self.canvas.bind('<Button-1>', self.mousepress)
+
+    def new_game(self,evt=None):
+        print "new game"
+
+    def quit_window(self,evt=None):
+        print "quit"
+
+    def help_go(self,evt=None):
+        print "help"
+
+    def about(self,evt=None):
+        print "about"
 
     def mousepress(self, event):
         move = self.coordinateToMove(event.x, event.y)
