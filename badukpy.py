@@ -26,7 +26,8 @@ class Window(Frame):
         
         menu = Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="Play", menu=menu)
-        menu.add_command(label="New Game",command=self.new_game)
+        menu.add_command(label="New Game", command=self.new_game)
+        menu.add_command(label="Pass", command=self.pass_move)
         menu.add_command(label="Undo Move")
 
         menu = Menu(self.menubar, tearoff=0)
@@ -66,6 +67,9 @@ class Window(Frame):
 
     def new_game(self,evt=None):
         print "new game"
+
+    def pass_move(self,evt=None):
+        self.make_move(PASS_MOVE)
 
     def quit_window(self,evt=None):
         print "quit"
