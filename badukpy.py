@@ -29,6 +29,7 @@ class Window(Frame):
         menu.add_command(label="New Game", command=self.new_game)
         menu.add_command(label="Pass", command=self.pass_move)
         menu.add_command(label="Undo Move")
+        menu.add_command(label="Options")
 
         menu = Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="Window", menu=menu)
@@ -66,7 +67,8 @@ class Window(Frame):
         self.canvas.bind('<Button-1>', self.mousepress)
 
     def new_game(self,evt=None):
-        print "new game"
+        self.game = Game(self.size)
+        self.__redraw_board(self,self.game.current_board)
 
     def pass_move(self,evt=None):
         self.make_move(PASS_MOVE)
@@ -95,7 +97,7 @@ class Window(Frame):
         y1 = ((y - self.cir_d / 2) / self.cir_d) + 1
         return (x1, y1)
 
-    def translate(self,move):
+    def moveToCooridate(self,move):
         ''' method for finding the x,y pos to draw a move at x,y(board coords)'''
         return ((self.cir_d/2) + (move[0]-1)*self.cir_d,(self.cir_d/2) + (move[1]-1)*self.cir_d)
 
@@ -106,7 +108,7 @@ class Window(Frame):
             self.canvas.delete(str(move))
         else:
             if not self.canvas.find_withtag(str(move)):
-                (x,y) = self.translate(move)
+                (x,y) = self.moveToCooridate(move)
                 self.canvas.create_oval(x,y,x+self.cir_d,y+self.cir_d,fill=draw_color[color],
                                         tags=(str(move),draw_color[color]))
 
@@ -119,7 +121,7 @@ class Window(Frame):
 
     def make_move(self,move):
         board = self.game.make_move(move)
-        if board and move != PASS_MOVE: # will be None if non-legal move
+        if board: # will be None if non-legal move
             self.__redraw_board(board)
 
     def random_game(self):
