@@ -72,6 +72,8 @@ class Window(Frame):
 
     def pass_move(self,evt=None):
         self.make_move(PASS_MOVE)
+        move = self.game.generate_move()
+        self.make_move(move)
 
     def quit_window(self,evt=None):
         print "quit"
