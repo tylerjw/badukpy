@@ -71,9 +71,9 @@ class GoGameTree:
             return True
 
         #ko test - make sure board hash isn't in current path
-        for node in self.series(self.cursor.path):
-            if board_hash == node.board_hash:
-                return False
+        hashes = [node.board_hash for node in self.series(self.cursor.path)]
+        if board_hash in hashes:
+            return False
 
         index = len(self.current.next)
         new_node = Node(self.current,index,other_side[self.current.side],
