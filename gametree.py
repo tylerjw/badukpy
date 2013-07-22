@@ -44,7 +44,7 @@ class GoGameTree:
             for item in root.next:
                 self.walk(item)
         else:
-            for item in firsts:
+            for item in self.firsts:
                 self.walk(item)
 
     def series(self,path):

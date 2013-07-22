@@ -686,7 +686,7 @@ class Game:
         if not self.legal_move(move): return None
         #update game_tree
         self.cur.make_move(move_to_sgf(move),sgf_side[self.current_board.side])
-
+        
         new_board, board_key = self.make_move_in_new_board(move)
         self.board_history.append(self.current_board)
         if move!=PASS_MOVE:
