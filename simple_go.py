@@ -183,10 +183,16 @@ class Board:
               Returns board as string.
               Key can be used for example in super-ko detection
         """
-        stones = []
-        for pos in self.iterate_goban():
-            stones.append(self.goban[pos])
+        stones = [self.goban[pos] for pos in self.iterate_goban()]
         return string.join(stones, "")
+
+    def hash_new_move(self, move):
+        '''For ko test, does not have the overhead of make move
+        '''
+        test_board = deepcopy(self.goban)
+        test_board[move] = self.side
+        key = string.join(test_board, "")
+        return key
 
     def change_side(self):
         self.side = other_side[self.side]
@@ -636,7 +642,7 @@ class Game:
                           Property('AP',['BadukPy'])])) #comment
         self.cur = self.game_tree.cursor()
         #past boards and moves
-        self.board_history = []
+        self.board_history = []  #not used
         #for super-ko detection
         self.position_seen = {}
         self.position_seen[self.current_board.key()] = True
@@ -664,45 +670,33 @@ class Game:
         board_key = new_board.key()
         return new_board, board_key
 
-    def legal_move(self, move):
-        """check whether move is legal
-              return truth value
-              first check move legality on current board
-              then check for repetition (situational super-ko)
-        """
-        if move==PASS_MOVE:
-            return True
-        if not self.current_board.legal_move(move): return False
-        new_board, board_key = self.make_move_in_new_board(move)
-        if board_key in self.position_seen: return False
-        return True
-
     def make_move(self, move):
         """make given move and return new board
               or return None if move is illegal
               First check move legality.
               Then make move and update history.
         """
-        if not self.legal_move(move): return None
+        if not self.current_board.legal_move(move): return None
+        board_key = self.current_board.hash_new_move(move) #for ko test
+        if board_key in self.position_seen: return None
         #update game_tree
         self.cur.make_move(move_to_sgf(move),sgf_side[self.current_board.side])
         
-        new_board, board_key = self.make_move_in_new_board(move)
-        self.board_history.append(self.current_board)
         if move!=PASS_MOVE:
             self.position_seen[board_key] = True
-        self.current_board = new_board
-        return new_board
+        self.current_board.make_move(move) #make the move
+        return self.current_board
 
     def undo_move(self):
         """undo latest move and return current board
               or return None if at beginning.
               Update repetition history and make previous position current.
+
+              BROKEN!  board_history removed
         """
         if self.board_history == []: return None
         if last_move!=PASS_MOVE:
             del self.position_seen[self.current_board.key()]
-        self.current_board = self.board_history.pop()
 
         #update game tree
         self.cur.undo_moves()
