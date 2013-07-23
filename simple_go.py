@@ -21,6 +21,7 @@ import re, string, time, random, sys
 from math import sqrt
 from copy import deepcopy
 from sgflib import Collection,GameTree,Node,SGFParser,Property
+from gametree import GoGameTree
 
 EMPTY = "."
 BLACK = "X"
@@ -191,7 +192,8 @@ class Board:
         '''
         test_board = deepcopy(self.goban)
         test_board[move] = self.side
-        key = string.join(test_board, "")
+        stones = [test_board[pos] for pos in self.iterate_goban()]
+        key = string.join(stones, "")
         return key
 
     def change_side(self):
@@ -449,6 +451,26 @@ class Board:
 
         return X
 
+    def undo_move(self, move, captures):
+        '''
+        undo a move
+        --
+        remove from goban
+        remove from group
+        restore captures to board
+        restore captures to groups
+        change sides
+        '''
+        self.goban[move] = EMPTY
+        for group in self.groups[self.side]:
+            if move in group:
+                group.remove(move)
+                break
+        if len(captures) > 0:
+            for pos in captures:
+                self.goban[pos] = other_side[self.side]
+            self.groups[other_side[self.side]].append(captures)
+        self.side = other_side[self.side]
 
     def remove_group(self,  pos):
         """Recursively remove given group from board and updating capture counts.
@@ -575,6 +597,7 @@ class Board:
 
               Keeps track of groups lists
         """
+        captures = []
         if move==PASS_MOVE:
             if change_sides: self.change_side()
             return move
@@ -592,13 +615,13 @@ class Board:
                     # remove from groups list
                     for i,group in enumerate(self.groups[remove_color]):
                         if pos in group:
-                            temp = self.groups[remove_color].pop(i)
+                            captures = self.groups[remove_color].pop(i)
                             # if a group is removed, it should be addedd as an empty group.
-                            self.groups[EMPTY].append(temp)
+                            self.groups[EMPTY].append(captures)
                             break
 
             if change_sides: self.change_side() # change side
-            return move
+            return captures
         return None
 
     def __str__(self):
@@ -636,16 +659,19 @@ class Game:
         """
         self.size = size
         self.current_board = Board(size)
-        self.game_tree = GameTree()
-        self.game_tree.append(Node([Property('FF',['4']), #file format
+        self.sgf_game_tree = GameTree()
+        self.sgf_game_tree.append(Node([Property('FF',['4']), #file format
                           Property('SZ',[str(self.size)]),#board size
                           Property('AP',['BadukPy'])])) #comment
-        self.cur = self.game_tree.cursor()
+        self.cur = self.sgf_game_tree.cursor()
         #past boards and moves
         self.board_history = []  #not used
         #for super-ko detection
         self.position_seen = {}
         self.position_seen[self.current_board.key()] = True
+
+        #game tree
+        self.game_tree = GoGameTree()
 
         #TODO: handle komi?
         self.komi = 6.5
@@ -653,22 +679,14 @@ class Game:
     def add_white(self, moves):
         for move in moves:
             self.current_board.goban[move] = WHITE
+        self.game_tree.white_placed = moves
         self.cur.add_white(map(move_to_sgf,moves))
 
     def add_black(self, moves):
         for move in moves:
             self.current_board.goban[move] = BLACK
+        self.game_tree.black_placed = moves
         self.cur.add_black(map(move_to_sgf,moves))
-
-    def make_move_in_new_board(self, move):
-        """This is utility method.
-              This does not check legality.
-              It returns move in copied board and also key of new board
-        """
-        new_board = deepcopy(self.current_board)
-        new_board.make_move(move)
-        board_key = new_board.key()
-        return new_board, board_key
 
     def make_move(self, move):
         """make given move and return new board
@@ -678,28 +696,31 @@ class Game:
         """
         if not self.current_board.legal_move(move): return None
         board_key = self.current_board.hash_new_move(move) #for ko test
-        if board_key in self.position_seen: return None
-        #update game_tree
+        #add to game tree
+        if not self.game_tree.make_move(move, board_key): return None
+        #update sgf_game_tree
         self.cur.make_move(move_to_sgf(move),sgf_side[self.current_board.side])
         
         if move!=PASS_MOVE:
             self.position_seen[board_key] = True
-        self.current_board.make_move(move) #make the move
+        captures = self.current_board.make_move(move) #make the move
+        self.game_tree.set_captures(captures)
         return self.current_board
 
     def undo_move(self):
         """undo latest move and return current board
               or return None if at beginning.
               Update repetition history and make previous position current.
-
-              BROKEN!  board_history removed
         """
-        if self.board_history == []: return None
-        if last_move!=PASS_MOVE:
-            del self.position_seen[self.current_board.key()]
+        move = self.game_tree.undo_move()
+        if not move: return None
 
         #update game tree
         self.cur.undo_moves()
+        
+        captures = self.game_tree.get_captures()
+        self.current_board.undo_move(move, captures)
+        
         return self.current_board
 
     def score(self):
@@ -731,11 +752,11 @@ class Game:
 
     def __str__(self):
         ''' print sfg string '''
-        return str(self.game_tree)
+        return str(self.sgf_game_tree)
 
     def move_history(self, distance):
         ''' returns a move in the history of the current game
-            uses game_tree
+            uses sgf_game_tree
             distance is a positive number,
             1 last move
             2 move before last
@@ -812,7 +833,7 @@ def sgf_test():
     sgfdata = sgffile.read()
     sgffile.close()
     g = game_from_sgf(sgfdata, 0)
-    print g.game_tree
+    print g.sgf_game_tree
 
     savef = open('save.sgf', 'w')
     savef.write(str(g))

@@ -58,7 +58,7 @@ class GoGameTree:
                 cursor = cursor.next[index]
                 yield cursor
             
-    def make_move(move,captures,board_hash):
+    def make_move(self,move,board_hash):
         ''' make a move if ko test passes
             if ko test fails, return false
             else add move, advance current, and return true
@@ -66,7 +66,7 @@ class GoGameTree:
         #if current is None, first move
         if self.current == None:
             index = len(self.firsts)
-            self.current = Node(None,index,BLACK,board_hash,captures)
+            self.current = Node(None,index,move,BLACK,board_hash,[])
             self.firsts.append(self.current)
             return True
 
@@ -77,15 +77,20 @@ class GoGameTree:
 
         index = len(self.current.next)
         new_node = Node(self.current,index,other_side[self.current.side],
-                        board_hash,captures)
+                        board_hash,[])
         self.current.next.append(new_node)
         self.current = new_node
         return True
 
+    def set_captures(self,captures):
+        self.current.captures = captures
+
+    def get_captures(self):
+        return self.current.captures
+
     def undo_move(self):
         ''' Undo a move, if current is none (first move) return None '''
-        if self.current == None:
-            return None
+        if self.current == None: return None
         old = self.current
         self.current = self.current.previous
         return old
